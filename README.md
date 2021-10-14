@@ -1,4 +1,6 @@
 # pySquidGame (beta)
+
+![Logo](/assets/img/titleLogo.png)
 A playable pygame application based of the Netflix Original Drama Series, 'Squid Game'
 
 ### Introduction
