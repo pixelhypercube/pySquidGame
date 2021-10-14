@@ -2,6 +2,7 @@ import pygame as pg
 import math
 import random
 import webbrowser
+from threading import Timer
 
 WIDTH = 800
 HEIGHT = 600
@@ -20,6 +21,7 @@ class Color:
     squid_pink = (217,65,118)
     squid_grey = (35,31,32)
     squid_teal = (55,161,142)
+    squid_light_teal = (80,217,192)
     sand = (243,231,179)
     red = (255,40,0)
     yellow = (200,210,0)
@@ -42,13 +44,13 @@ mouseIsDown = pg.mouse.get_pressed()[0] == 1
 
 pg.display.set_caption("pySquidGame")
 
-def renderText(content,posX,posY,fontSize=20):
-    font = pg.font.Font("./assets/fonts/Montserrat-Regular.ttf",fontSize)
+def renderText(content,posX,posY,fontSize=20,color=Color.white):
+    font = pg.font.Font("./assets/fonts/Inter-SemiBold.ttf",fontSize)
     sentences = content.split("\n")
     x = posX
     y = posY
     for line in sentences:
-        text = font.render(line,True,[255,255,255])
+        text = font.render(line,True,color)
         text_width,text_height = text.get_size()
         textRect = text.get_rect()
         textRect.center = (x,y-(len(sentences)-1)*text_height/2)
@@ -63,17 +65,31 @@ def renderImage(path,posX,posY,size=None):
     imageRect.center = (posX,posY)
     frame.blit(image,imageRect)
 
-def playSound(path):
+def playMusic(path):
     pg.mixer.music.load(path)
     pg.mixer.music.play(1)
     # sound = pg.mixer.Sound(path)
     # sound.play()
+def playSound(path):
+    sound = pg.mixer.Sound(path)
+    sound.play()
+
+def set_interval(func,seconds):
+    def func_wrapper():
+        set_interval(func,seconds)
+        func()
+    t = Timer(seconds,func_wrapper)
+    t.start()
+    return t
+
+def time_int_format(time):
+    return (str(time//60) if time//60>=10 else "0"+str(time//60))+":"+(str(time%60) if time%60 >= 10 else "0"+str(time%60))
 
 # def open_url(path):
 #     webbrowser.open(path)
 
 class Player:
-    def __init__(self,x,y,r,color,is_player):
+    def __init__(self,x,y,r,color,is_player,max_speed=0.5):
         self.x = x
         self.y = y
         self.vx = 0
@@ -84,7 +100,7 @@ class Player:
         self.ay = 0
 
         # Max speed variables
-        self.max_speed = 0.5
+        self.max_speed = max_speed
         
         # Friction variable
         self.friction = 0.05
@@ -128,10 +144,10 @@ class Player:
         distance = math.sqrt((self.x-ball.x)**2+(self.y-ball.y)**2)
         if (distance<ball.r+self.r):
             angle = math.atan2(self.y-ball.y,self.x-ball.x)
-            self.vx += math.cos(angle)*0.5
-            self.vy += math.sin(angle)*0.5
-            ball.vx -= math.cos(angle)*0.5
-            ball.vy -= math.sin(angle)*0.5
+            self.vx += math.cos(angle)*0.1
+            self.vy += math.sin(angle)*0.1
+            ball.vx -= math.cos(angle)*0.1
+            ball.vy -= math.sin(angle)*0.1
     def contactBlock(self,block):
         if (self.x+self.r+self.vx>block.x
         and self.x-self.r+self.vx<block.x+block.w
@@ -149,7 +165,19 @@ class Player:
                 self.vy *= -1.3
             else:
                 self.vy *= -0.6
-
+class FootStep:
+    def __init__(self,x,y,r,color,lifespan):
+        self.x = x
+        self.y = y
+        self.r = r
+        self.color = color
+        self.lifespan = lifespan
+    def show(self):
+        pg.draw.circle(frame,self.color,(int(self.x),int(self.y)),int(self.r))
+        pg.draw.circle(frame,Color.black,(int(self.x),int(self.y)),int(self.r),1)
+        self.lifespan-=1
+    def detectLifespanOver(self):
+        return self.lifespan<0
 class Block:
     def __init__(self,x,y,w,h,color):
         self.x = x
@@ -255,8 +283,11 @@ class Button:
 
 class GameScreen:
     def __init__(self):
+        global currentScreen
         self.playBtn = Button(WIDTH/2,HEIGHT/1.5,100,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Start Game!","levels")
         self.backBtn = Button(80,HEIGHT/5,50,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Back","home")
+        self.levelBackBtn = Button(80,HEIGHT/8,50,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Back","levels")
+        self.startBtn = Button(WIDTH/2,HEIGHT/1.33,100,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Start!",currentScreen[:-4])
         self.linkBtn = Button(WIDTH/2,HEIGHT/1.2,90,50,Color.white,Color.white,Color.white,Color.white,"",function=lambda :webbrowser.open("https://github.com/pixelhypercube/pySquidGame"))
         self.returnLvlsBtn = Button(WIDTH/2,HEIGHT/1.6,100,30,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Go back","levels")
         self.lvlNumBtns = []
@@ -267,15 +298,15 @@ class GameScreen:
         self.gameImageNames = ["redLightGreenLight","honeyComb","tugOfWar","marbles","glassSteppingStones","squidGame"]
         for i in range(1,4):
             if i<=1:
-                self.lvlNumBtns.append(Button(i*200,(HEIGHT/2)+30,90,50,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,self.gameNames[i-1],screen=self.gameImageNames[i-1],function=None,image_path="./assets/img/levels/"+self.gameImageNames[i-1]+".png"))
+                self.lvlNumBtns.append(Button(i*200,(HEIGHT/2)+30,90,50,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,self.gameNames[i-1],screen=self.gameImageNames[i-1]+"Help",function=None,image_path="./assets/img/levels/"+self.gameImageNames[i-1]+".png"))
             else:
                 self.lvlNumBtns.append(Button(i*200,(HEIGHT/2)+30,90,50,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,self.gameNames[i-1],screen="levels",function=None,image_path="./assets/img/levels/"+self.gameImageNames[i-1]+".png"))
         for i in range(4,7):
             if i<=1:
-                self.lvlNumBtns.append(Button((i-3)*200,(HEIGHT/2)+160,90,50,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,self.gameNames[i-1],screen=self.gameImageNames[i-1],function=None,image_path="./assets/img/levels/"+self.gameImageNames[i-1]+".png"))
+                self.lvlNumBtns.append(Button((i-3)*200,(HEIGHT/2)+160,90,50,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,self.gameNames[i-1],screen=self.gameImageNames[i-1]+"Help",function=None,image_path="./assets/img/levels/"+self.gameImageNames[i-1]+".png"))
             else:
                 self.lvlNumBtns.append(Button((i-3)*200,(HEIGHT/2)+160,90,50,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,self.gameNames[i-1],screen="levels",function=None,image_path="./assets/img/levels/"+self.gameImageNames[i-1]+".png"))
-        self.player = Player(50,HEIGHT/2,8,Color.white,True)
+        self.player = Player(50,HEIGHT/2,8,Color.white,True,max_speed=0.5)
         # self.hole = Hole(550,250,15,Color.black)
         self.lvlTxt = []
         self.strokes = 0
@@ -322,6 +353,19 @@ class GameScreen:
         renderText("The good thing is, you can revive yourself",WIDTH/2,HEIGHT/2.4,fontSize=20)
         renderText(" by clicking the 'Go back' button! :)",WIDTH/2,HEIGHT/2.1,fontSize=20)
         self.returnLvlsBtn.show()
+    def showHelpScreen(self):
+        global currentScreen
+        if currentScreen=="redLightGreenLightHelp":
+            pg.draw.rect(frame,Color.squid_grey,(0,0,WIDTH,HEIGHT))
+            self.levelBackBtn.show()
+            renderText("How to play:",WIDTH/2,HEIGHT/12,fontSize=40)
+            renderText("Run to the finish line before the time runs out!",WIDTH/2,HEIGHT/7,fontSize=20)
+            renderImage("./assets/img/demoWithLabels.png",WIDTH/2,HEIGHT/2.25,[int(500/2.5),int(375/2.5)])
+            renderText("When the doll faces you, freeze!",WIDTH/2,HEIGHT/1.21,fontSize=20)
+            renderText("Otherwise, you'll be eliminated!",WIDTH/2,HEIGHT/1.16,fontSize=20)
+            renderText("Use the WASD keys to move",WIDTH/2,HEIGHT/1.1,fontSize=20)
+            renderText("Repeatedly press W if you want to boost your speed!",WIDTH/2,HEIGHT/1.06,fontSize=20)
+            self.startBtn.show()
     # def showRedLightGreenLightScreen(self):
         # gameScreen = RedLightGreenLight()
         # pg.draw.rect(frame,Color.squid_grey,(0,0,WIDTH,HEIGHT))
@@ -334,19 +378,23 @@ class Game:
         self.bg_color = bg_color
         self.inGameFrameCount = 0
     def showPrepScreen(self,timeLeft):
-        pg.draw.rect(frame,Color.green,(WIDTH/2-120,HEIGHT/2-40,240,80))
-        renderText("Get ready in",WIDTH/2,HEIGHT/2-20,fontSize=20)
-        renderText(str(timeLeft),WIDTH/2,HEIGHT/2+10,fontSize=30)
+        pg.draw.rect(frame,Color.squid_grey,(WIDTH/2-80,HEIGHT/4-30,160,80))
+        renderText("Get ready in",WIDTH/2,HEIGHT/4-10,fontSize=20)
+        renderText(str(timeLeft),WIDTH/2,HEIGHT/4+20,fontSize=30)
+
+
 
 class RedLightGreenLight(Game):
-    def __init__(self,time,preparation_time,bg_color,start_y,finish_y):
+    def __init__(self,time,preparation_time,bg_color,start_y,finish_y,timeLeft=60):
         super().__init__(time,preparation_time,bg_color)
+        self.timeLeft = timeLeft*60
         self.paused = False
         self.players = []
         self.start_y = start_y
         self.finish_y = finish_y
-        self.player = Player(random.randint(0,WIDTH),self.start_y+random.randint(0,200),8,Color.light_blue,True)
-        self.redGreenInterval = 5
+        self.player = Player(random.randint(0,WIDTH),self.start_y+random.randint(0,200),8,Color.squid_light_teal,True,max_speed=0.5)
+        self.redGreenInterval = 4.8
+        self.scanDurationTime = 0.7
         self.intervalDurationLeft = self.redGreenInterval*60
         self.isRedLight = False
         self.wall_blocks = [
@@ -359,60 +407,52 @@ class RedLightGreenLight(Game):
         self.restartBtn = Button(WIDTH/2,HEIGHT/2,100,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Restart Game",screen="redLightGreenLight")
         self.exitBtn = Button(WIDTH/2,HEIGHT/2+75,100,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Exit Game",screen="levels")
         self.genPlayers(50)
+
+        # Footsteps list
+        self.footsteps = []
+
+        # 'Terminal' player max speed
+        self.terminalMaxSpeed = 0.35
+
+        # Variable to count the number of times 'W' was pressed
+        self.wPressedCount = 0
+
+        self.footstepTimeObj = None
+
+
     def genPlayers(self,count):
         for i in range(0,count):
             xPos = random.randint(30,WIDTH-30)
             yPos = self.start_y+random.randint(0,100)
-            self.players.append(Player(xPos,yPos,8,Color.squid_teal,False))
-        # xPos = random.randint(30,WIDTH-30)
-        # yPos = self.start_y+random.randint(0,100)
-        # index = 0
-        # for i in range(0,count):
-        #     if i>0:
-        #         for player in self.players:
-        #             xPos = random.randint(30,WIDTH-30)
-        #             yPos = self.start_y+random.randint(0,100)
-        #             while player.detectContact(xPos,yPos):
-        #                 xPos = random.randint(30,WIDTH-30)
-        #                 yPos = self.start_y+random.randint(0,100)
-        #             self.players.append(Player(xPos,yPos,8,Color.squid_teal,False))
-        #             break
-        #     else:
-        #         self.players.append(Player(random.randint(30,WIDTH-30),self.start_y+random.randint(0,100),8,Color.squid_teal,False))
-        # print(len(self.players))
-        # print("index " + str(index))        
-        # index = 0
-        # while index<count:
-        #     xPos = random.randint(30,WIDTH-30)
-        #     yPos = self.start_y+random.randint(0,100)
-        #     isContact = False
-        #     if len(self.players)>0:
-        #         for player in self.players:
-        #             while player.detectContact(xPos,yPos):
-        #                 xPos = random.randint(30,WIDTH-30)
-        #                 yPos = self.start_y+random.randint(0,100)
-        #                 if not player.detectContact(xPos,yPos):
-        #                     self.players.append(Player(xPos,yPos,8,Color.squid_teal,False))
-        #                     break
-        #             index+=1
-        #             # break
-        #     else:
-        #         self.players.append(Player(xPos,yPos,8,Color.squid_teal,False))
+            self.players.append(Player(xPos,yPos,8,Color.squid_teal,False,max_speed=random.random()*0.2+0.15))
     def accelerate_player(self,player,ax,ay):
         player.ax = ax
         player.ay = ay
     def toggle_light(self):
-        playSound("./assets/sounds/changeLight.wav")
         self.isRedLight = not self.isRedLight
         self.intervalDurationLeft = self.redGreenInterval*60
         if not self.isRedLight:
-            playSound("./assets/sounds/greenLight.wav")
+            playMusic("./assets/sounds/greenLight.wav")
+        else:
+            playMusic("./assets/sounds/changeLight.wav")
+            t = Timer(0.5,lambda : playMusic("./assets/sounds/scanning.wav"))
+            t.start()
+    
+    # def generate_footstep(self,player):
+    #     self.footsteps.append(FootStep(int(player.x),int(player.y),int(player.r/4),Color.black,40))
+
     def show(self):
         global running
         global gameScreen
         global currentScreen
         if not self.paused:
             pg.draw.rect(frame,self.bg_color,(0,0,WIDTH,HEIGHT))
+            renderText(time_int_format(int(self.timeLeft/60)),WIDTH/2,HEIGHT/2,fontSize=50,color=Color.black)
+            if self.timeLeft<0:
+                gameScreen = GameScreen()
+                currentScreen="fail"
+                pg.mixer.music.stop()
+                playMusic("./assets/sounds/gunShotLong.wav")
             pg.draw.rect(frame,Color.red,(0,self.start_y,WIDTH,10))
             pg.draw.rect(frame,Color.red,(0,self.finish_y,WIDTH,10))
             if self.isRedLight or (self.preparation_time*60-self.inGameFrameCount>0):
@@ -431,21 +471,36 @@ class RedLightGreenLight(Game):
                     player.friction = 10
                     if player.y<=self.start_y:
                         player.y == self.start_y
+                    self.player.contactPlayer(player)
                 # self.player.friction = 10
                 if self.player.y<=self.start_y:
                     self.player.y = self.start_y
             elif (self.preparation_time*60-self.inGameFrameCount==0):
-                playSound("./assets/sounds/greenLight.wav")
+                playMusic("./assets/sounds/greenLight.wav")
             else:
+                self.timeLeft -= 1
                 for player in self.players:
-                    if player.y>=self.finish_y and not self.isRedLight:
-                        self.accelerate_player(player,random.random()*0.1-0.05,-random.random()*0.75)
+                    velocity = math.sqrt(abs(player.vx)**2+abs(player.vy)**2)
+                    if not self.isRedLight:
+                        if player.y<=self.finish_y:
+                            self.accelerate_player(player,0,0)
+                        else:
+                            self.accelerate_player(player,random.random()*0.1-0.05,-random.random()*0.5)
                     else:
-                        self.accelerate_player(player,0,0)
-                        # if random.random()>0.5:
-                        velocity = math.sqrt(abs(player.vx)**2+abs(player.vy)**2)
-                        if velocity>0.2 and self.intervalDurationLeft<=self.redGreenInterval*60-10:
+                        if self.footstepTimeObj != None:
+                            self.footstepTimeObj.cancel()
+
+                        # Reset player's max speed
+                        self.player.max_speed = 0.25
+                        if velocity>0.099999 and player.y>=self.finish_y and self.intervalDurationLeft<=self.redGreenInterval*60-self.scanDurationTime*60:
                             self.players.remove(player)
+                            playSound("./assets/sounds/gunShot.wav")
+                        if player.y>=self.finish_y:
+                            self.accelerate_player(player,0,0)
+                            # Players shivering
+                            if random.random()<0.025:
+                                player.vx = random.random()*0.18-0.09
+                                player.vy = random.random()*0.18-0.09
                     for player1 in self.players:
                         # player1.friction = 0.25
                         player1.contactPlayer(player)
@@ -454,11 +509,11 @@ class RedLightGreenLight(Game):
                 self.player.friction = 0.1
                 self.intervalDurationLeft-=1
                 player_velocity = math.sqrt(abs(self.player.vx)**2+abs(self.player.vy)**2)
-                if self.isRedLight and player_velocity>0.2 and self.intervalDurationLeft<=self.redGreenInterval*60-10:
+                if self.isRedLight and player_velocity>0.099999 and self.intervalDurationLeft<=self.redGreenInterval*60-self.scanDurationTime*60:
                     gameScreen = GameScreen()
                     currentScreen="fail"
                     pg.mixer.music.stop()
-                    playSound("./assets/sounds/gunShotLong.wav")
+                    playMusic("./assets/sounds/gunShotLong.wav")
                 if self.player.y<self.finish_y:
                     gameScreen = GameScreen()
                     pg.mixer.music.stop()
@@ -468,19 +523,27 @@ class RedLightGreenLight(Game):
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     running = False
+                    # self.footstepTimeObj.cancel()
                 elif event.type == pg.KEYDOWN:
                     if event.key == pg.K_w:
-                        self.player.ay = -0.25
+                        self.player.ay = -random.random()*0.25
+                        # self.wPressedCount+=1
+                        # if self.wPressedCount==2:
+                        #     self.footstepTimeObj = set_interval(lambda: self.footsteps.append(FootStep(int(self.player.x+random.random()*0.1-0.05),int(self.player.y),int(self.player.r/3),Color.black,40)),0.25)
+                        if self.player.max_speed<self.terminalMaxSpeed:
+                            self.player.max_speed += 0.005
                     elif event.key == pg.K_a:
-                        self.player.ax = -0.25
+                        self.player.ax = -random.random()*0.25
                     elif event.key == pg.K_s:
-                        self.player.ay = 0.25
+                        self.player.ay = random.random()*0.25
                     elif event.key == pg.K_d:
-                        self.player.ax = 0.25
+                        self.player.ax = random.random()*0.25
                     elif event.key == pg.K_ESCAPE or event.key == pg.K_p:
                         self.paused = not self.paused
                         if self.paused:
                             pg.mixer.music.pause()
+                        self.player.ax = 0
+                        self.player.ay = 0
                 elif event.type == pg.KEYUP:
                     if event.key == pg.K_w:
                         self.player.ay = 0
@@ -491,6 +554,10 @@ class RedLightGreenLight(Game):
                     elif event.key == pg.K_d:
                         self.player.ax = 0
 
+            # for footstep in self.footsteps:
+            #     footstep.show()
+            #     if footstep.detectLifespanOver():
+            #         self.footsteps.remove(footstep)
             for player in self.players:
                 player.show()
                 player.update()
@@ -499,6 +566,9 @@ class RedLightGreenLight(Game):
             self.inGameFrameCount += 1
         else:
             for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    print("Quitting game...")
+                    running = False
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_ESCAPE or event.key == pg.K_p:
                         self.paused = not self.paused
@@ -528,6 +598,8 @@ while running:
         gameScreen.showSuccessScreen()
     if (currentScreen=="fail"):
         gameScreen.showFailureScreen()
+    if (currentScreen=="redLightGreenLightHelp"):
+        gameScreen.showHelpScreen()
     if (currentScreen=="redLightGreenLight"):
         if type(gameScreen).__name__=="RedLightGreenLight":
             gameScreen.show()
@@ -548,6 +620,9 @@ while running:
                 gameScreen.backBtn.click(event)
                 for lvlBtn in gameScreen.lvlNumBtns:
                     lvlBtn.click(event)
+            if currentScreen=="redLightGreenLightHelp":
+                gameScreen.levelBackBtn.click(event)
+                gameScreen.startBtn.click(event)
             if currentScreen=="success":
                 gameScreen.returnLvlsBtn.click(event)
             if currentScreen=="fail":
