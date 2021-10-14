@@ -2,7 +2,7 @@
 
 ![Logo](/assets/img/titleLogo.png)
 <br>
-A playable pygame application based of the Netflix Original Drama Series, 'Squid Game'
+A playable pygame application based on the Netflix Original Drama Series, 'Squid Game'
 
 ### Introduction
 In Squid Game, there are 6 stages that the players are supposed to play in order, which are:
