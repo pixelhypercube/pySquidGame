@@ -284,11 +284,12 @@ class Button:
 class GameScreen:
     def __init__(self):
         global currentScreen
-        self.playBtn = Button(WIDTH/2,HEIGHT/1.5,100,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Start Game!","levels")
+        # self.playBtn = Button(WIDTH/2,HEIGHT/1.5,100,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Start Game!","levels")
+        self.playBtn = Button(WIDTH/2,HEIGHT/1.35,90,50,Color.white,Color.white,Color.white,Color.white,"",screen="levels")
         self.backBtn = Button(80,HEIGHT/5,50,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Back","home")
         self.levelBackBtn = Button(80,HEIGHT/8,50,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Back","levels")
         self.startBtn = Button(WIDTH/2,HEIGHT/1.33,100,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Start!",currentScreen[:-4])
-        self.linkBtn = Button(WIDTH/2,HEIGHT/1.2,90,50,Color.white,Color.white,Color.white,Color.white,"",function=lambda :webbrowser.open("https://github.com/pixelhypercube/pySquidGame"))
+        self.linkBtn = Button(WIDTH/2,HEIGHT/1.1,120,30,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Github Link!\n(Opens new window)",function=lambda :webbrowser.open("https://github.com/pixelhypercube/pySquidGame"))
         self.returnLvlsBtn = Button(WIDTH/2,HEIGHT/1.6,100,30,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Go back","levels")
         self.lvlNumBtns = []
         self.blocks = []
@@ -324,14 +325,14 @@ class GameScreen:
         # renderText("Py",WIDTH/2,HEIGHT/4,fontSize=40)
         renderText("By PixelHyperCube!",WIDTH/2,HEIGHT/1.9,fontSize=24)
         renderText("Made using pygame!",WIDTH/2,HEIGHT/1.7,fontSize=15)
-        if mouseX>=WIDTH/2-90 and mouseX<=WIDTH/2+90 and mouseY>=HEIGHT/1.2-50 and mouseY<=HEIGHT/1.2+50:
-            renderImage("./assets/img/invitationBack.png",WIDTH/2,HEIGHT/1.2)
+        if mouseX>=WIDTH/2-90 and mouseX<=WIDTH/2+90 and mouseY>=HEIGHT/1.35-50 and mouseY<=HEIGHT/1.35+50:
+            renderImage("./assets/img/invitationBack1.png",WIDTH/2,HEIGHT/1.35)
         else:
-            renderImage("./assets/img/invitationFront.png",WIDTH/2,HEIGHT/1.2)
-        self.playBtn.show()
+            renderImage("./assets/img/invitationFront.png",WIDTH/2,HEIGHT/1.35)
+        # self.playBtn.show()
 
         # For debugging
-        # self.linkBtn.show()
+        self.linkBtn.show()
     def showLevelScreen(self):
         pg.draw.rect(frame,Color.squid_grey,(0,0,WIDTH,HEIGHT))
         renderText("Choose a stage!",WIDTH/2,HEIGHT/5,fontSize=40)
