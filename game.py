@@ -323,6 +323,7 @@ class GameScreen:
         pg.draw.rect(frame,Color.squid_grey,(0,0,WIDTH,HEIGHT))
         renderImage("./assets/img/titleLogo.png",WIDTH/2,HEIGHT/3)
         # renderText("Py",WIDTH/2,HEIGHT/4,fontSize=40)
+        renderText("(beta)",WIDTH/3.5,HEIGHT/2.5,fontSize=32)
         renderText("By PixelHyperCube!",WIDTH/2,HEIGHT/1.9,fontSize=24)
         renderText("Made using pygame!",WIDTH/2,HEIGHT/1.7,fontSize=15)
         if mouseX>=WIDTH/2-90 and mouseX<=WIDTH/2+90 and mouseY>=HEIGHT/1.35-50 and mouseY<=HEIGHT/1.35+50:
