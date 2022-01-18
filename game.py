@@ -88,12 +88,12 @@ def time_int_format(time):
 # def open_url(path):
 #     webbrowser.open(path)
 
-class Player:
-    def __init__(self,x,y,r,color,is_player,max_speed=0.5):
+class Circle:
+    def __init__(self,x,y,r,color,is_player,vx=0,vy=0,max_speed=0.5):
         self.x = x
         self.y = y
-        self.vx = 0
-        self.vy = 0
+        self.vx = vx
+        self.vy = vy
 
         # Acceleration variables
         self.ax = 0
@@ -140,7 +140,7 @@ class Player:
                 self.y = HEIGHT-10-self.r
         self.vx/=(1+self.friction)
         self.vy/=(1+self.friction)
-    def contactPlayer(self,ball):
+    def contactCircle(self,ball):
         distance = math.sqrt((self.x-ball.x)**2+(self.y-ball.y)**2)
         if (distance<ball.r+self.r):
             angle = math.atan2(self.y-ball.y,self.x-ball.x)
@@ -165,6 +165,49 @@ class Player:
                 self.vy *= -1.3
             else:
                 self.vy *= -0.6
+    def contactForceArea(self,forceArea):
+        if (self.x+self.r>forceArea.x and self.x-self.r<forceArea.x+forceArea.w and self.y+self.r>forceArea.y and self.y-self.r<forceArea.y+forceArea.h):
+            # print("Force area")
+            if forceArea.direction=="left":
+                self.vx-=forceArea.strength
+            if forceArea.direction=="right":
+                self.vx+=forceArea.strength
+            if forceArea.direction=="up":
+                self.vy-=forceArea.strength
+            if forceArea.direction=="down":
+                self.vy+=forceArea.strength
+            if forceArea.direction=="radial":
+                angle = math.atan2(self.y-forceArea.y-forceArea.w/2,self.x-forceArea.x-forceArea.h/2)
+                self.vx-=forceArea.strength*math.cos(angle)
+                self.vy-=forceArea.strength*math.sin(angle)
+
+class ForceArea:
+    def __init__(self,x,y,w,h,strength,direction,shadeColor):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.strength = strength
+        self.direction = direction
+        self.shadeColor = shadeColor
+    def show(self):
+        pg.draw.rect(frame,self.shadeColor,(self.x,self.y,self.w,self.h))
+        if self.direction=="left":
+            # renderText("←",int(self.x+self.w/2),int(self.y+self.h/2),fontSize=50)
+            pg.draw.rect(frame,Color.white,(self.x-frameCount%int(self.w/2-10)*2+self.w,self.y,10,self.h))
+        elif self.direction=="right":
+            # renderText("→",int(self.x+self.w/2),int(self.y+self.h/2),fontSize=50)
+            pg.draw.rect(frame,Color.white,(self.x+frameCount%int(self.w/2-10)*2,self.y,10,self.h))
+        elif self.direction=="up":
+            # renderText("↑",int(self.x+self.w/2),int(self.y+self.h/2),fontSize=50)
+            pg.draw.rect(frame,Color.white,(self.x,self.y-frameCount%int(self.h/2-10)*2,self.w,10))
+        elif self.direction=="down":
+            # renderText("↓",int(self.x+self.w/2),int(self.y+self.h/2),fontSize=50)
+            pg.draw.rect(frame,Color.white,(self.x,self.y+frameCount%int(self.h/2-10)*2+self.h,self.w,10))
+        elif self.direction=="radial":
+            pg.draw.circle(frame,Color.white,(int(self.x+self.w/2),int(self.y+self.h/2)),-(frameCount+i*10)%int(self.w/4))
+            pg.draw.circle(frame,self.shadeColor,(int(self.x+self.w/2),int(self.y+self.h/2)),-(frameCount+i*10+5)%int(self.w/4))
+
 class FootStep:
     def __init__(self,x,y,r,color,lifespan):
         self.x = x
@@ -192,6 +235,16 @@ class Block:
     def update(self):
         self.x+=self.vx
         self.y+=self.vy
+
+class Ddakji(Block):
+    def __init__(self, x, y, w, h, color):
+        super().__init__(x, y, w, h, color)
+    def show(self):
+        pg.draw.rect(frame,self.color,(self.x,self.y,self.w,self.h))
+        pg.draw.line(frame,Color.black,(self.x,self.y),(self.x+self.w,self.y+self.h))
+        pg.draw.line(frame,Color.black,(self.x+self.w,self.y+self.h),(self.x,self.y))
+        
+
 
 class Button:
     def __init__(self,x,y,w,h,color,hoverColor,clickedColor,textColor,content,screen=None,function=None,image_path=None):
@@ -221,6 +274,8 @@ class Button:
             currentScreen = self.screen
             if (currentScreen=="redLightGreenLight"):
                 gameScreen = RedLightGreenLight(100,5,Color.sand,500,100)
+            elif currentScreen=="marbles":
+                gameScreen = MarblesGame(100,5,Color.sand,100)
             else:
                 gameScreen = GameScreen()
         else:
@@ -298,21 +353,22 @@ class GameScreen:
         self.gameNames = ["Red Light,\n Green Light","Honeycomb \n(Coming Soon!)","Tug Of War \n(Coming Soon!)","Marbles \n(Coming Soon!)","Glass Stepping\n Stones \n(Coming Soon!)","Squid Game \n(Coming Soon!)"]
         self.gameImageNames = ["redLightGreenLight","honeyComb","tugOfWar","marbles","glassSteppingStones","squidGame"]
         for i in range(1,4):
-            if i<=1:
+            if i==1:
                 self.lvlNumBtns.append(Button(i*200,(HEIGHT/2)+30,90,50,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,self.gameNames[i-1],screen=self.gameImageNames[i-1]+"Help",function=None,image_path="./assets/img/levels/"+self.gameImageNames[i-1]+".png"))
             else:
                 self.lvlNumBtns.append(Button(i*200,(HEIGHT/2)+30,90,50,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,self.gameNames[i-1],screen="levels",function=None,image_path="./assets/img/levels/"+self.gameImageNames[i-1]+".png"))
         for i in range(4,7):
-            if i<=1:
+            if i==4:
                 self.lvlNumBtns.append(Button((i-3)*200,(HEIGHT/2)+160,90,50,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,self.gameNames[i-1],screen=self.gameImageNames[i-1]+"Help",function=None,image_path="./assets/img/levels/"+self.gameImageNames[i-1]+".png"))
             else:
                 self.lvlNumBtns.append(Button((i-3)*200,(HEIGHT/2)+160,90,50,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,self.gameNames[i-1],screen="levels",function=None,image_path="./assets/img/levels/"+self.gameImageNames[i-1]+".png"))
-        self.player = Player(50,HEIGHT/2,8,Color.white,True,max_speed=0.5)
+        self.lvlNumBtns.append(Button(WIDTH-100,(HEIGHT/4),40,20,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Ddakji",screen="ddakji",function=None))
+        self.player = Circle(50,HEIGHT/2,8,Color.white,True,max_speed=0.5)
         # self.hole = Hole(550,250,15,Color.black)
         self.lvlTxt = []
-        self.strokes = 0
-        self.par = 0
-        self.currentLevel = 0
+        # self.strokes = 0
+        # self.par = 0
+        # self.currentLevel = 0
         self.paused = False
 
         self.won = False
@@ -357,9 +413,8 @@ class GameScreen:
         self.returnLvlsBtn.show()
     def showHelpScreen(self):
         global currentScreen
+        pg.draw.rect(frame,Color.squid_grey,(0,0,WIDTH,HEIGHT))
         if currentScreen=="redLightGreenLightHelp":
-            pg.draw.rect(frame,Color.squid_grey,(0,0,WIDTH,HEIGHT))
-            self.levelBackBtn.show()
             renderText("How to play:",WIDTH/2,HEIGHT/12,fontSize=40)
             renderText("Run to the finish line before the time runs out!",WIDTH/2,HEIGHT/7,fontSize=20)
             renderImage("./assets/img/demoWithLabels.png",WIDTH/2,HEIGHT/2.25,[int(500/2.5),int(375/2.5)])
@@ -367,7 +422,26 @@ class GameScreen:
             renderText("Otherwise, you'll be eliminated!",WIDTH/2,HEIGHT/1.16,fontSize=20)
             renderText("Use the WASD keys to move",WIDTH/2,HEIGHT/1.1,fontSize=20)
             renderText("Repeatedly press W if you want to boost your speed!",WIDTH/2,HEIGHT/1.06,fontSize=20)
-            self.startBtn.show()
+        elif currentScreen=="marblesHelp":
+            # Change these
+            renderText("How to play:",WIDTH/2,HEIGHT/12,fontSize=40)
+            renderText("Run to the finish line before the time runs out!",WIDTH/2,HEIGHT/7,fontSize=20)
+            renderImage("./assets/img/demoWithLabels.png",WIDTH/2,HEIGHT/2.25,[int(500/2.5),int(375/2.5)])
+            renderText("When the doll faces you, freeze!",WIDTH/2,HEIGHT/1.21,fontSize=20)
+            renderText("Otherwise, you'll be eliminated!",WIDTH/2,HEIGHT/1.16,fontSize=20)
+            renderText("Use the WASD keys to move",WIDTH/2,HEIGHT/1.1,fontSize=20)
+            renderText("Repeatedly press W if you want to boost your speed!",WIDTH/2,HEIGHT/1.06,fontSize=20)
+        elif currentScreen=="ddakjiHelp":
+            # Change these
+            renderText("How to play:",WIDTH/2,HEIGHT/12,fontSize=40)
+            renderText("Run to the finish line before the time runs out!",WIDTH/2,HEIGHT/7,fontSize=20)
+            renderImage("./assets/img/demoWithLabels.png",WIDTH/2,HEIGHT/2.25,[int(500/2.5),int(375/2.5)])
+            renderText("When the doll faces you, freeze!",WIDTH/2,HEIGHT/1.21,fontSize=20)
+            renderText("Otherwise, you'll be eliminated!",WIDTH/2,HEIGHT/1.16,fontSize=20)
+            renderText("Use the WASD keys to move",WIDTH/2,HEIGHT/1.1,fontSize=20)
+            renderText("Repeatedly press W if you want to boost your speed!",WIDTH/2,HEIGHT/1.06,fontSize=20)
+        self.levelBackBtn.show()
+        self.startBtn.show()
     # def showRedLightGreenLightScreen(self):
         # gameScreen = RedLightGreenLight()
         # pg.draw.rect(frame,Color.squid_grey,(0,0,WIDTH,HEIGHT))
@@ -394,7 +468,7 @@ class RedLightGreenLight(Game):
         self.players = []
         self.start_y = start_y
         self.finish_y = finish_y
-        self.player = Player(random.randint(0,WIDTH),self.start_y+random.randint(0,200),8,Color.squid_light_teal,True,max_speed=0.5)
+        self.player = Circle(random.randint(0,WIDTH),self.start_y+random.randint(0,200),8,Color.squid_light_teal,True,max_speed=0.5)
         self.redGreenInterval = 4.8
         self.scanDurationTime = 0.7
         self.intervalDurationLeft = self.redGreenInterval*60
@@ -408,7 +482,7 @@ class RedLightGreenLight(Game):
         # self.resumeBtn = Button(WIDTH/2,HEIGHT/2,100,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Resume Game",screen=None,function=self.togglePause(not self.paused))
         self.restartBtn = Button(WIDTH/2,HEIGHT/2,100,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Restart Game",screen="redLightGreenLight")
         self.exitBtn = Button(WIDTH/2,HEIGHT/2+75,100,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Exit Game",screen="levels")
-        self.genPlayers(50)
+        self.genCircles(50)
 
         # Footsteps list
         self.footsteps = []
@@ -422,11 +496,11 @@ class RedLightGreenLight(Game):
         self.footstepTimeObj = None
 
 
-    def genPlayers(self,count):
+    def genCircles(self,count):
         for i in range(0,count):
             xPos = random.randint(30,WIDTH-30)
             yPos = self.start_y+random.randint(0,100)
-            self.players.append(Player(xPos,yPos,8,Color.squid_teal,False,max_speed=random.random()*0.2+0.15))
+            self.players.append(Circle(xPos,yPos,8,Color.squid_teal,False,max_speed=random.random()*0.2+0.15))
     def accelerate_player(self,player,ax,ay):
         player.ax = ax
         player.ay = ay
@@ -468,12 +542,12 @@ class RedLightGreenLight(Game):
                 for player in self.players:
                     for player1 in self.players:
                         player1.friction=10
-                        player1.contactPlayer(player)
-                    # player.contactPlayer(self.player)
+                        player1.contactCircle(player)
+                    # player.contactCircle(self.player)
                     player.friction = 10
                     if player.y<=self.start_y:
                         player.y == self.start_y
-                    self.player.contactPlayer(player)
+                    self.player.contactCircle(player)
                 # self.player.friction = 10
                 if self.player.y<=self.start_y:
                     self.player.y = self.start_y
@@ -499,15 +573,15 @@ class RedLightGreenLight(Game):
                             playSound("./assets/sounds/gunShot.wav")
                         if player.y>=self.finish_y:
                             self.accelerate_player(player,0,0)
-                            # Players shivering
+                            # Circles shivering
                             if random.random()<0.025:
                                 player.vx = random.random()*0.18-0.09
                                 player.vy = random.random()*0.18-0.09
                     for player1 in self.players:
                         # player1.friction = 0.25
-                        player1.contactPlayer(player)
+                        player1.contactCircle(player)
                     player.friction = 0.1
-                    self.player.contactPlayer(player)
+                    self.player.contactCircle(player)
                 self.player.friction = 0.1
                 self.intervalDurationLeft-=1
                 player_velocity = math.sqrt(abs(self.player.vx)**2+abs(self.player.vy)**2)
@@ -580,7 +654,92 @@ class RedLightGreenLight(Game):
             renderText("Press 'Esc' or 'P' to resume game!",WIDTH/2,HEIGHT/2.5,fontSize=20)
             self.restartBtn.show()
             self.exitBtn.show()
-            
+
+class MarblesGame(Game):
+    def __init__(self, time, preparation_time, bg_color,timeLeft=60):
+        super().__init__(time, preparation_time, bg_color)
+        self.timeLeft = timeLeft*60
+        self.blocks = []
+        self.wallBlocks = [
+            Block(0,0,WIDTH,10,Color.grey),
+            Block(0,0,10,HEIGHT,Color.grey),
+            Block(0,HEIGHT-10,WIDTH,10,Color.grey),
+            Block(WIDTH-10,0,10,HEIGHT,Color.grey),
+        ]
+        self.forceAreas = [
+            ForceArea(WIDTH/2-75,HEIGHT/2-75,150,150,0.5,"radial",Color.squid_light_teal)
+        ]
+        self.marbles = []
+        self.lvlTxt = []
+        self.tempMarble = Circle(WIDTH/2,HEIGHT/1.2,10,Color.green,False,max_speed=10)
+        # self.strokes = 0
+        # self.par = 0
+        # self.currentLevel = 0
+        self.paused = False
+        self.restartBtn = Button(WIDTH/2,HEIGHT/2,100,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Restart Game",screen="redLightGreenLight")
+        self.exitBtn = Button(WIDTH/2,HEIGHT/2+75,100,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Exit Game",screen="levels")
+    
+    def showType1(self):
+        global running
+        global currentScreen
+        if not self.paused:
+            pg.draw.rect(frame,self.bg_color,(0,0,WIDTH,HEIGHT))
+            for forceArea in self.forceAreas:
+                forceArea.show()
+                for marble in self.marbles:
+                    marble.contactForceArea(forceArea)
+            for marble in self.marbles:
+                marble.show()
+                marble.update()
+            self.tempMarble.show()
+            if mouseIsDown:
+                distance = 0.1*math.sqrt((mouseX-self.tempMarble.x)**2+(mouseY-self.tempMarble.y)**2)
+                if distance<10:
+                    pg.draw.line(frame,[55+int(distance*20),250-int(distance*25),0],(self.tempMarble.x,self.tempMarble.y),(mouseX,mouseY),int(distance/2)+1)
+                else:
+                    angle = math.atan2(self.tempMarble.y-mouseY,self.tempMarble.x-mouseX)
+                    pg.draw.line(frame,[255,0,0],(self.tempMarble.x,self.tempMarble.y),(self.tempMarble.x-100*math.cos(angle),self.tempMarble.y-100*math.sin(angle)),6)
+            for event in pg.event.get():
+                if event.type==pg.QUIT:
+                    print("Quitting game...")
+                    running = False
+                if event.type==pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE or event.key == pg.K_p:
+                        self.paused = not self.paused
+                        if self.paused:
+                            pg.mixer.music.pause()
+                elif event.type==pg.MOUSEBUTTONUP:
+                    distance = 0.1*math.sqrt((mouseX-self.tempMarble.x)**2+(mouseY-self.tempMarble.y)**2)
+                    angle = math.atan2(self.tempMarble.y-mouseY,self.tempMarble.x-mouseX)
+                    vx = 0
+                    vy = 0
+                    if distance<10:
+                        vx = distance*math.cos(angle)
+                        vy = distance*math.sin(angle)
+                    else:
+                        vx = 10*math.cos(angle)
+                        vy = 10*math.sin(angle)
+                    self.marbles.append(Circle(self.tempMarble.x,self.tempMarble.y,self.tempMarble.r,self.tempMarble.color,False,vx=vx,vy=vy,max_speed=10))
+        else:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    print("Quitting game...")
+                    running = False
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE or event.key == pg.K_p:
+                        self.paused = not self.paused
+                        pg.mixer.music.unpause()
+            pg.draw.rect(frame,Color.squid_grey,(0,0,WIDTH,HEIGHT))
+            renderText("Paused",WIDTH/2,HEIGHT/3,fontSize=40)
+            renderText("Press 'Esc' or 'P' to resume game!",WIDTH/2,HEIGHT/2.5,fontSize=20)
+            self.restartBtn.show()
+            self.exitBtn.show()
+
+class DdakjiGame(Game):
+    def __init__(self,time,preparation_time,bg_color,timeLeft=60):
+        super().__init__(time,preparation_time,bg_color)
+    def show(self):
+        pg.draw.rect(frame,Color.squid_grey,(0,0,WIDTH,HEIGHT))
     
 gameScreen = GameScreen()
 
@@ -600,11 +759,16 @@ while running:
         gameScreen.showSuccessScreen()
     if (currentScreen=="fail"):
         gameScreen.showFailureScreen()
-    if (currentScreen=="redLightGreenLightHelp"):
+    if (currentScreen=="redLightGreenLightHelp" 
+    or currentScreen=="marblesHelp"):
         gameScreen.showHelpScreen()
     if (currentScreen=="redLightGreenLight"):
         if type(gameScreen).__name__=="RedLightGreenLight":
             gameScreen.show()
+    if (currentScreen=="marbles"):
+        if type(gameScreen).__name__=="MarblesGame":
+            # Leaving type1 at the moment - will add in more styles!
+            gameScreen.showType1()
         # gameScreen.showRedLightGreenLightScreen()
     for i in range(1,11):
         if (currentScreen=="level"+str(i)):
@@ -622,16 +786,18 @@ while running:
                 gameScreen.backBtn.click(event)
                 for lvlBtn in gameScreen.lvlNumBtns:
                     lvlBtn.click(event)
-            if currentScreen=="redLightGreenLightHelp":
+            if currentScreen=="redLightGreenLightHelp" or currentScreen=="marblesHelp":
                 gameScreen.levelBackBtn.click(event)
                 gameScreen.startBtn.click(event)
             if currentScreen=="success":
                 gameScreen.returnLvlsBtn.click(event)
             if currentScreen=="fail":
                 gameScreen.returnLvlsBtn.click(event)
-        elif (type(gameScreen).__name__=="RedLightGreenLight"):
+        elif (type(gameScreen).__name__=="RedLightGreenLight" or type(gameScreen).__name__=="MarblesGame"):
             gameScreen.restartBtn.click(event)
             gameScreen.exitBtn.click(event)
+        # elif (type(gameScreen).__name__=="MarblesGame"):
+            
         # elif event.type == pg.MOUSEBUTTONDOWN:
         #     print("mouse is down")
         # elif event.type == pg.MOUSEBUTTONUP:
