@@ -111,8 +111,10 @@ class Circle:
         # Is player
         self.is_player = is_player
     def show(self):
+        pg.draw.circle(frame,Color.black,(int(self.x),int(self.y)),int(self.r)+1)
         pg.draw.circle(frame,self.color,(int(self.x),int(self.y)),int(self.r))
-        pg.draw.circle(frame,Color.black,(int(self.x),int(self.y)),int(self.r),1)
+        # pg.draw.circle(frame,self.color,(int(self.x),int(self.y)),int(self.r))
+        # pg.draw.circle(frame,Color.black,(int(self.x),int(self.y)),int(self.r),1)
         if self.is_player:
             pg.draw.polygon(frame,Color.red,((self.x,self.y-15),(self.x-10,self.y-25),(self.x+10,self.y-25)))
             pg.draw.polygon(frame,Color.black,((self.x,self.y-15),(self.x-10,self.y-25),(self.x+10,self.y-25)),1)
@@ -177,9 +179,20 @@ class Circle:
             if forceArea.direction=="down":
                 self.vy+=forceArea.strength
             if forceArea.direction=="radial":
-                angle = math.atan2(self.y-forceArea.y-forceArea.w/2,self.x-forceArea.x-forceArea.h/2)
+                angle = math.atan2(self.y-forceArea.y-forceArea.h/2,self.x-forceArea.x-forceArea.w/2)
                 self.vx-=forceArea.strength*math.cos(angle)
                 self.vy-=forceArea.strength*math.sin(angle)
+
+# Used specifically for the 'Marbles' game
+
+class Marble(Circle):
+    def __init__(self, x, y, r, color, is_player, vx=0, vy=0, max_speed=0.5,player=1):
+        super().__init__(x, y, r, color, is_player, vx, vy, max_speed)
+        self.player = player # 1 - player 1, 2 - player 2
+
+    # Check if the marble is in the hole
+    def isInForceArea(self,forceArea):
+        return self.x+self.r>forceArea.x+20 and self.x-self.r<forceArea.x+forceArea.w-20 and self.y+self.r>forceArea.y+20 and self.y-self.r<forceArea.y+forceArea.h-20
 
 class ForceArea:
     def __init__(self,x,y,w,h,strength,direction,shadeColor):
@@ -190,8 +203,14 @@ class ForceArea:
         self.strength = strength
         self.direction = direction
         self.shadeColor = shadeColor
-    def show(self):
-        pg.draw.rect(frame,self.shadeColor,(self.x,self.y,self.w,self.h))
+
+        # force_area_type prop = 0 - default 1 - hole (used in marbles game)
+    def show(self,force_area_type=0):
+        if force_area_type==0:
+            pg.draw.rect(frame,self.shadeColor,(self.x,self.y,self.w,self.h))
+        elif force_area_type==1:
+            for i in range(0,150):
+                pg.draw.rect(frame,(243-i*1,231-i*1,179-i*1),(self.x+i*0.5,self.y+i*0.5,self.w-i*1,self.h-i*1))
         if self.direction=="left":
             # renderText("←",int(self.x+self.w/2),int(self.y+self.h/2),fontSize=50)
             pg.draw.rect(frame,Color.white,(self.x-frameCount%int(self.w/2-10)*2+self.w,self.y,10,self.h))
@@ -205,8 +224,9 @@ class ForceArea:
             # renderText("↓",int(self.x+self.w/2),int(self.y+self.h/2),fontSize=50)
             pg.draw.rect(frame,Color.white,(self.x,self.y+frameCount%int(self.h/2-10)*2+self.h,self.w,10))
         elif self.direction=="radial":
-            pg.draw.circle(frame,Color.white,(int(self.x+self.w/2),int(self.y+self.h/2)),-(frameCount+i*10)%int(self.w/4))
-            pg.draw.circle(frame,self.shadeColor,(int(self.x+self.w/2),int(self.y+self.h/2)),-(frameCount+i*10+5)%int(self.w/4))
+            if force_area_type==0:
+                pg.draw.circle(frame,Color.white,(int(self.x+self.w/2),int(self.y+self.h/2)),-(frameCount+i*10)%int(self.w/4))
+                pg.draw.circle(frame,self.shadeColor,(int(self.x+self.w/2),int(self.y+self.h/2)),-(frameCount+i*10+5)%int(self.w/4))
 
 class FootStep:
     def __init__(self,x,y,r,color,lifespan):
@@ -667,11 +687,11 @@ class MarblesGame(Game):
             Block(WIDTH-10,0,10,HEIGHT,Color.grey),
         ]
         self.forceAreas = [
-            ForceArea(WIDTH/2-75,HEIGHT/2-75,150,150,0.5,"radial",Color.squid_light_teal)
+            ForceArea(WIDTH/2-75,HEIGHT/3.5-75,150,150,0.5,"radial",Color.squid_light_teal)
         ]
         self.marbles = []
         self.lvlTxt = []
-        self.tempMarble = Circle(WIDTH/2,HEIGHT/1.2,10,Color.green,False,max_speed=10)
+        self.tempMarble = Marble(WIDTH/2,HEIGHT/1.2,10,Color.green,False,max_speed=10)
         # self.strokes = 0
         # self.par = 0
         # self.currentLevel = 0
@@ -679,20 +699,83 @@ class MarblesGame(Game):
         self.restartBtn = Button(WIDTH/2,HEIGHT/2,100,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Restart Game",screen="redLightGreenLight")
         self.exitBtn = Button(WIDTH/2,HEIGHT/2+75,100,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Exit Game",screen="levels")
     
+        self.player_turn = 1 # 1 - player's turn 2 - CPU's turn
+
+    # def checkMarblesMoving(self):
+    #     self.moving = [abs(marble.vx)<0.1 and abs(marble.vy)<0.1 for marble in self.marbles]
+    #     return all(self.moving)
+
+    # Relative to self.tempMarble's position
+
+    def getXPosList(self,distance,angle):
+        return distance*math.cos(angle)
+    
+    def getYPosList(self,distance,angle):
+        return distance*math.sin(angle)
+
+    def shootCPUPlayer(self):
+
+        # Special usage of all of the marbles in the selected area (making it smarter)
+
+        # x_min = 1
+        # x_max = 2
+        # y_min = 2
+        # y_max = 2
+
+        # distances = list(map(lambda marble:0.1*math.sqrt((marble.x-self.tempMarble.x)**2+(marble.y-self.tempMarble.y)**2),self.marbles))
+        # angles = list(map(lambda marble:math.atan2(marble.y-self.tempMarble.y,marble.x-self.tempMarble.x),self.marbles))
+
+        if len(self.marbles)>0:
+            # x_positions = list(map(lambda marble:self.getXPosList(0.1*math.sqrt((marble.x-self.tempMarble.x)**2+(marble.y-self.tempMarble.y)**2),math.atan2(marble.y-self.tempMarble.y,marble.x-self.tempMarble.x)),self.marbles))
+            # y_positions = list(map(lambda marble:self.getYPosList(0.1*math.sqrt((marble.x-self.tempMarble.x)**2+(marble.y-self.tempMarble.y)**2),math.atan2(marble.y-self.tempMarble.y,marble.x-self.tempMarble.x)),self.marbles))
+
+            # print(x_positions)
+            # print(y_positions)
+
+            # x_min = min(x_positions)*0.25
+            # x_max = max(x_positions)*0.25
+            # y_min = min(y_positions)*0.25
+            # y_max = max(y_positions)*0.25
+
+            # self.marbles.append(Marble(self.tempMarble.x,self.tempMarble.y,self.tempMarble.r,self.tempMarble.color,False,vx=random.random()*(x_max-x_min if len(x_positions)>1 else x_max),vy=random.random()*(y_max-y_min if len(y_positions)>1 else y_max),max_speed=10,player=2))
+            self.marbles.append(Marble(self.tempMarble.x,self.tempMarble.y,self.tempMarble.r,(0+random.randint(0,60),127+random.randint(-30,30),50+random.randint(-30,30)),False,vx=random.random()*4-2,vy=-random.random()*8-2,max_speed=10,player=2))
+
     def showType1(self):
         global running
         global currentScreen
+        global gameScreen
         if not self.paused:
             pg.draw.rect(frame,self.bg_color,(0,0,WIDTH,HEIGHT))
             for forceArea in self.forceAreas:
-                forceArea.show()
+                forceArea.show(force_area_type=1)
                 for marble in self.marbles:
                     marble.contactForceArea(forceArea)
+
+                    if marble.isInForceArea(forceArea) and marble.vx<0.05 and marble.vy<0.05:
+                        if marble.player==1:
+                            gameScreen = GameScreen()
+                            pg.mixer.music.stop()
+                            currentScreen="success"
+                        elif marble.player==2:
+                            gameScreen = GameScreen()
+                            currentScreen="fail"
+                            pg.mixer.music.stop()
+                            playMusic("./assets/sounds/gunShotLong.wav")
+                    
             for marble in self.marbles:
                 marble.show()
                 marble.update()
+                for marble1 in self.marbles:
+                    marble.contactCircle(marble1)
             self.tempMarble.show()
-            if mouseIsDown:
+
+            # Check if all the marbles are not moving
+            if all([abs(marble.vx)<0.1 and abs(marble.vy)<0.1 for marble in self.marbles]):
+                if self.player_turn==2:   
+                    self.shootCPUPlayer()
+                    self.player_turn = 1
+
+            if mouseIsDown and self.player_turn==1:
                 distance = 0.1*math.sqrt((mouseX-self.tempMarble.x)**2+(mouseY-self.tempMarble.y)**2)
                 if distance<10:
                     pg.draw.line(frame,[55+int(distance*20),250-int(distance*25),0],(self.tempMarble.x,self.tempMarble.y),(mouseX,mouseY),int(distance/2)+1)
@@ -709,17 +792,20 @@ class MarblesGame(Game):
                         if self.paused:
                             pg.mixer.music.pause()
                 elif event.type==pg.MOUSEBUTTONUP:
-                    distance = 0.1*math.sqrt((mouseX-self.tempMarble.x)**2+(mouseY-self.tempMarble.y)**2)
-                    angle = math.atan2(self.tempMarble.y-mouseY,self.tempMarble.x-mouseX)
-                    vx = 0
-                    vy = 0
-                    if distance<10:
-                        vx = distance*math.cos(angle)
-                        vy = distance*math.sin(angle)
-                    else:
-                        vx = 10*math.cos(angle)
-                        vy = 10*math.sin(angle)
-                    self.marbles.append(Circle(self.tempMarble.x,self.tempMarble.y,self.tempMarble.r,self.tempMarble.color,False,vx=vx,vy=vy,max_speed=10))
+                    if self.player_turn==1:
+                        distance = 0.1*math.sqrt((mouseX-self.tempMarble.x)**2+(mouseY-self.tempMarble.y)**2)
+                        angle = math.atan2(self.tempMarble.y-mouseY,self.tempMarble.x-mouseX)
+                        vx = 0
+                        vy = 0
+                        if distance<10:
+                            vx = distance*math.cos(angle)
+                            vy = distance*math.sin(angle)
+                        else:
+                            vx = 10*math.cos(angle)
+                            vy = 10*math.sin(angle)
+                        self.marbles.append(Marble(self.tempMarble.x,self.tempMarble.y,self.tempMarble.r,(0+random.randint(0,60),127+random.randint(-30,30),50+random.randint(-30,30)),False,vx=vx,vy=vy,max_speed=10,player=1))
+                        
+                        self.player_turn = 2
         else:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
