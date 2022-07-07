@@ -146,10 +146,10 @@ class Circle:
         distance = math.sqrt((self.x-ball.x)**2+(self.y-ball.y)**2)
         if (distance<ball.r+self.r):
             angle = math.atan2(self.y-ball.y,self.x-ball.x)
-            self.vx += math.cos(angle)*0.1
-            self.vy += math.sin(angle)*0.1
-            ball.vx -= math.cos(angle)*0.1
-            ball.vy -= math.sin(angle)*0.1
+            self.vx += math.cos(angle)*0.4
+            self.vy += math.sin(angle)*0.4
+            ball.vx -= math.cos(angle)*0.4
+            ball.vy -= math.sin(angle)*0.4
     def contactBlock(self,block):
         if (self.x+self.r+self.vx>block.x
         and self.x-self.r+self.vx<block.x+block.w
@@ -167,21 +167,30 @@ class Circle:
                 self.vy *= -1.3
             else:
                 self.vy *= -0.6
-    def contactForceArea(self,forceArea):
-        if (self.x+self.r>forceArea.x and self.x-self.r<forceArea.x+forceArea.w and self.y+self.r>forceArea.y and self.y-self.r<forceArea.y+forceArea.h):
-            # print("Force area")
-            if forceArea.direction=="left":
-                self.vx-=forceArea.strength
-            if forceArea.direction=="right":
-                self.vx+=forceArea.strength
-            if forceArea.direction=="up":
-                self.vy-=forceArea.strength
-            if forceArea.direction=="down":
-                self.vy+=forceArea.strength
-            if forceArea.direction=="radial":
-                angle = math.atan2(self.y-forceArea.y-forceArea.h/2,self.x-forceArea.x-forceArea.w/2)
-                self.vx-=forceArea.strength*math.cos(angle)
-                self.vy-=forceArea.strength*math.sin(angle)
+                # type = 0 - default, 1 - marbles
+    def contactForceArea(self,forceArea,type_no=0):
+        if type_no==0:
+            if (self.x+self.r>forceArea.x and self.x-self.r<forceArea.x+forceArea.w and self.y+self.r>forceArea.y and self.y-self.r<forceArea.y+forceArea.h):
+                # print("Force area")
+                if forceArea.direction=="left":
+                    self.vx-=forceArea.strength
+                if forceArea.direction=="right":
+                    self.vx+=forceArea.strength
+                if forceArea.direction=="up":
+                    self.vy-=forceArea.strength
+                if forceArea.direction=="down":
+                    self.vy+=forceArea.strength
+                if forceArea.direction=="radial":
+                    angle = math.atan2(self.y-forceArea.y-forceArea.h/2,self.x-forceArea.x-forceArea.w/2)
+                    self.vx-=forceArea.strength*math.cos(angle)
+                    self.vy-=forceArea.strength*math.sin(angle)
+        elif type_no==1:
+            distance = math.sqrt((self.x-forceArea.x+forceArea.w/2)**2+(self.y-forceArea.y+forceArea.h/2)**2)
+            if (min(forceArea.w,forceArea.h)>distance/1.8):
+                if forceArea.direction=="radial":
+                    angle = math.atan2(self.y-forceArea.y-forceArea.h/2,self.x-forceArea.x-forceArea.w/2)
+                    self.vx-=forceArea.strength*math.cos(angle)
+                    self.vy-=forceArea.strength*math.sin(angle)
 
 # Used specifically for the 'Marbles' game
 
@@ -190,9 +199,32 @@ class Marble(Circle):
         super().__init__(x, y, r, color, is_player, vx, vy, max_speed)
         self.player = player # 1 - player 1, 2 - player 2
 
+    def show(self):
+        pg.draw.circle(frame,Color.black,(int(self.x),int(self.y)),int(self.r)+1)
+        pg.draw.circle(frame,self.color,(int(self.x),int(self.y)),int(self.r))
+        pg.draw.circle(frame,(86, 219, 115),(int(self.x+self.r/2-2),int(self.y-self.r/2+2)),int(self.r/2))
+        # pg.draw.circle(frame,self.color,(int(self.x),int(self.y)),int(self.r))
+        # pg.draw.circle(frame,Color.black,(int(self.x),int(self.y)),int(self.r),1)
+        if self.is_player:
+            pg.draw.polygon(frame,Color.red,((self.x,self.y-15),(self.x-10,self.y-25),(self.x+10,self.y-25)))
+            pg.draw.polygon(frame,Color.black,((self.x,self.y-15),(self.x-10,self.y-25),(self.x+10,self.y-25)),1)
+
     # Check if the marble is in the hole
     def isInForceArea(self,forceArea):
-        return self.x+self.r>forceArea.x+20 and self.x-self.r<forceArea.x+forceArea.w-20 and self.y+self.r>forceArea.y+20 and self.y-self.r<forceArea.y+forceArea.h-20
+        distance = math.sqrt((self.x-forceArea.x+forceArea.w/2)**2+(self.y-forceArea.y+forceArea.h/2)**2)
+        return min(forceArea.w,forceArea.h)>distance/1.6
+        # return self.x+self.r>forceArea.x+20 and self.x-self.r<forceArea.x+forceArea.w-20 and self.y+self.r>forceArea.y+20 and self.y-self.r<forceArea.y+forceArea.h-20
+
+class Polygon:
+    def __init__(self,x,y,w,h,coords,color):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.coords = coords
+        self.color = color
+    def show(self):
+        pg.draw.polygon(frame,self.color,self.coords)
 
 class ForceArea:
     def __init__(self,x,y,w,h,strength,direction,shadeColor):
@@ -203,14 +235,30 @@ class ForceArea:
         self.strength = strength
         self.direction = direction
         self.shadeColor = shadeColor
+        self.holePolygons = []
+        self.fillHolePolygons(50,no_sides=[4,10])
+
+    def fillHolePolygons(self,iterations,no_sides=[4,10]):
+        for i in range(0,iterations):
+            sides = random.randint(no_sides[0],no_sides[1])
+            self.holePolygons.append(Polygon(self.x,self.y,self.w,self.h,[(math.cos((angle/sides)*2*math.pi*(random.random()*0.01+0.99))*(int(self.w/2)-i)+self.x+int(self.w/2),math.sin((angle/sides)*2*math.pi)*((self.h/2)-i)*(random.random()*0.01+0.99)+self.y+int(self.h/2)) for angle in range(0,sides)],(243-i,231-i,179-i)))
+
+
+    def showHolePolygon(self):
+        for polygon in self.holePolygons:
+            polygon.show()
+        # pg.draw.polygon(frame,(243-i,231-i,179-i),[(math.cos((angle/no_sides)*2*math.pi)*(self.w-i)+self.x+int(self.w/2),math.sin((angle/no_sides)*2*math.pi)*(self.h-i)+self.y+int(self.h/2)) for angle in range(0,no_sides)])
 
         # force_area_type prop = 0 - default 1 - hole (used in marbles game)
     def show(self,force_area_type=0):
         if force_area_type==0:
             pg.draw.rect(frame,self.shadeColor,(self.x,self.y,self.w,self.h))
         elif force_area_type==1:
-            for i in range(0,150):
-                pg.draw.rect(frame,(243-i*1,231-i*1,179-i*1),(self.x+i*0.5,self.y+i*0.5,self.w-i*1,self.h-i*1))
+            self.showHolePolygon()
+            # for i in range(0,150):
+            #     self.showHolePolygon()
+                # pg.draw.circle(frame,(243-i,231-i,179-i),(int(self.x+self.w/2),int(self.y+self.h/2)),min(self.w,self.h)-i)
+                # pg.draw.rect(frame,(243-i*1,231-i*1,179-i*1),(self.x+i*0.5,self.y+i*0.5,self.w-i*1,self.h-i*1))
         if self.direction=="left":
             # renderText("←",int(self.x+self.w/2),int(self.y+self.h/2),fontSize=50)
             pg.draw.rect(frame,Color.white,(self.x-frameCount%int(self.w/2-10)*2+self.w,self.y,10,self.h))
@@ -423,7 +471,7 @@ class GameScreen:
         pg.draw.rect(frame,Color.squid_grey,(0,0,WIDTH,HEIGHT))
         renderText("Success!",WIDTH/2,HEIGHT/3,fontSize=40)
         renderText("Thanks a lot for playing! Since this program is in beta,",WIDTH/2,HEIGHT/2.4,fontSize=20)
-        renderText("the next 5 games are currently in progress!",WIDTH/2,HEIGHT/2.1,fontSize=20)
+        renderText("there are 4 games are currently in progress!",WIDTH/2,HEIGHT/2.1,fontSize=20)
         self.returnLvlsBtn.show()
     def showFailureScreen(self):
         pg.draw.rect(frame,Color.squid_grey,(0,0,WIDTH,HEIGHT))
@@ -687,7 +735,7 @@ class MarblesGame(Game):
             Block(WIDTH-10,0,10,HEIGHT,Color.grey),
         ]
         self.forceAreas = [
-            ForceArea(WIDTH/2-75,HEIGHT/3.5-75,150,150,0.5,"radial",Color.squid_light_teal)
+            ForceArea(WIDTH/2-75,HEIGHT/3.5-50,150,150,0.5,"radial",Color.squid_light_teal)
         ]
         self.marbles = []
         self.lvlTxt = []
@@ -749,7 +797,7 @@ class MarblesGame(Game):
             for forceArea in self.forceAreas:
                 forceArea.show(force_area_type=1)
                 for marble in self.marbles:
-                    marble.contactForceArea(forceArea)
+                    marble.contactForceArea(forceArea,type_no=1)
 
                     if marble.isInForceArea(forceArea) and marble.vx<0.05 and marble.vy<0.05:
                         if marble.player==1:
@@ -762,6 +810,11 @@ class MarblesGame(Game):
                             pg.mixer.music.stop()
                             playMusic("./assets/sounds/gunShotLong.wav")
                     
+            if self.player_turn==1:
+                renderText("Your turn!",WIDTH//2,HEIGHT-25,fontSize=20,color=Color.black)
+            elif self.player_turn==2:
+                renderText("CPU's turn!",WIDTH//2,HEIGHT-25,fontSize=20,color=Color.black)
+            
             for marble in self.marbles:
                 marble.show()
                 marble.update()
