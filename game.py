@@ -305,12 +305,78 @@ class Block:
         self.y+=self.vy
 
 class Ddakji(Block):
-    def __init__(self, x, y, w, h, color):
+    def __init__(self, x, y, w, h, color,rotation):
         super().__init__(x, y, w, h, color)
+
+        self.vx = 0
+        self.vy = 0
+
+        self.friction = 0.05
+
+        self.cooldown = 0
+
+        # determines whether the ddakji is facing up or down
+        # 0 - up 1 - down
+        self.rotation = rotation
+
+        # Changes to true after it's being flipped
+        self.flipped = False
+
+    def set_rotation(self,rotation):
+        self.flipped = rotation!=self.rotation
+        self.rotation = rotation
+
+
+
     def show(self):
+        pg.draw.rect(frame,Color.black,(self.x-1,self.y-1,self.w+2,self.h+2))
         pg.draw.rect(frame,self.color,(self.x,self.y,self.w,self.h))
-        pg.draw.line(frame,Color.black,(self.x,self.y),(self.x+self.w,self.y+self.h))
-        pg.draw.line(frame,Color.black,(self.x+self.w,self.y+self.h),(self.x,self.y))
+        if self.rotation==0:
+            pg.draw.line(frame,Color.black,(self.x,self.y),(self.x+self.w,self.y+self.h))
+            pg.draw.line(frame,Color.black,(self.x,self.y+self.h),(self.x+self.w,self.y))
+    
+    def intersect(self,player):
+        return (self.x<player.x-self.w and self.x>player.x+player.w and self.y<player.y-self.h and self.y>player.y+player.h)
+
+    def update(self):
+        
+        self.vx/=(1+self.friction)
+        self.vy/=(1+self.friction)
+
+        if self.cooldown>0:
+            self.x+=self.vx
+            self.y+=self.vy
+            self.cooldown-=1
+
+    # When the player holds a ddakji
+
+    def hold(self,x_pos,y_pos):
+        self.x = int(x_pos-self.w/2)
+        self.y = int(y_pos-self.h/2)
+
+        # Filling the gradient below
+        pg.draw.rect(frame,[50,50,50],(self.x+10,self.y+10,self.w,self.h))
+            
+        # Then filling the ddakji
+        pg.draw.rect(frame,Color.black,(self.x-1,self.y-1,self.w+2,self.h+2))
+        pg.draw.rect(frame,self.color,(self.x,self.y,self.w,self.h))
+
+    # When player throws ddakji
+
+    def throw(self,player):
+        # detect if self and other player intersect
+        if self.x<player.x+player.w and self.x>player.x-self.w and self.y<player.y+player.h and self.y>player.y-self.h:
+            
+            player.cooldown = 50
+            angle = math.atan2((player.y-player.h/2)-(self.y-self.h/2),(player.x-player.w/2)-(self.x-self.w/2))
+            distance = math.sqrt(abs((player.y-player.h/2)-(self.y-self.h/2))**2+abs((player.x-player.w/2)-(self.x-self.w/2))**2)
+
+            # Calculates the distance to middle of edge
+            # print((random.random()*distance)*1.2/distance)
+
+            player.set_rotation(int((random.random()*distance)*1.2/distance))
+            player.vx = math.cos(angle)
+            player.vy = math.sin(angle)
         
 
 
@@ -344,6 +410,8 @@ class Button:
                 gameScreen = RedLightGreenLight(100,5,Color.sand,500,100)
             elif currentScreen=="marbles":
                 gameScreen = MarblesGame(100,5,Color.sand,100)
+            elif currentScreen=="ddakji":
+                gameScreen = DdakjiGame(100,5,Color.sand,100)
             else:
                 gameScreen = GameScreen()
         else:
@@ -430,7 +498,7 @@ class GameScreen:
                 self.lvlNumBtns.append(Button((i-3)*200,(HEIGHT/2)+160,90,50,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,self.gameNames[i-1],screen=self.gameImageNames[i-1]+"Help",function=None,image_path="./assets/img/levels/"+self.gameImageNames[i-1]+".png"))
             else:
                 self.lvlNumBtns.append(Button((i-3)*200,(HEIGHT/2)+160,90,50,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,self.gameNames[i-1],screen="levels",function=None,image_path="./assets/img/levels/"+self.gameImageNames[i-1]+".png"))
-        self.lvlNumBtns.append(Button(WIDTH-100,(HEIGHT/4),40,20,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Ddakji",screen="ddakji",function=None))
+        self.lvlNumBtns.append(Button(WIDTH-100,(HEIGHT/4),40,20,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Ddakji",screen="ddakjiHelp",function=None))
         self.player = Circle(50,HEIGHT/2,8,Color.white,True,max_speed=0.5)
         # self.hole = Hole(550,250,15,Color.black)
         self.lvlTxt = []
@@ -877,8 +945,147 @@ class MarblesGame(Game):
 class DdakjiGame(Game):
     def __init__(self,time,preparation_time,bg_color,timeLeft=60):
         super().__init__(time,preparation_time,bg_color)
+        self.paused = False
+        self.timeLeft = timeLeft*60
+        self.restartBtn = Button(WIDTH/2,HEIGHT/2,100,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Restart Game",screen="redLightGreenLight")
+        self.exitBtn = Button(WIDTH/2,HEIGHT/2+75,100,25,Color.squid_purple,Color.squid_purple2,Color.squid_pink,Color.grey,"Exit Game",screen="levels")
+
+        self.player = Ddakji(WIDTH/2,HEIGHT/2,50,50,Color.blue,0)
+        self.cpu = Ddakji(WIDTH/2+100,HEIGHT/2+100,50,50,Color.red,0)
+
+        # 1 - player, 2 - cpu, 0 - waiting
+        self.player_turn = 1
+
     def show(self):
-        pg.draw.rect(frame,Color.squid_grey,(0,0,WIDTH,HEIGHT))
+        global running
+        global currentScreen
+        global gameScreen
+        global mouseX
+        global mouseY
+        if not self.paused:
+            pg.draw.rect(frame,self.bg_color,(0,0,WIDTH,HEIGHT))
+
+            if self.player_turn==1:
+                self.cpu.show()
+                self.player.show()
+            elif self.player_turn==2:
+                self.player.show()
+                self.cpu.show()
+            elif self.player_turn==0:
+                if self.player.cooldown>0:
+                    self.player.show()
+                    self.cpu.show()
+                elif self.cpu.cooldown>0:
+                    self.cpu.show()
+                    self.player.show()
+
+            self.player.update()
+            self.cpu.update()
+
+            next_player = 0
+
+            if self.player_turn==1:
+                self.player.hold(mouseX,mouseY)
+            elif self.player_turn==2:
+
+                if self.cpu.flipped:
+                    gameScreen = GameScreen()
+                    pg.mixer.music.stop()
+                    currentScreen="success"
+
+                self.cpu.x = random.randint(self.player.x,self.player.x+self.player.w)
+                self.cpu.y = random.randint(self.player.y,self.player.y+self.player.h)
+                self.cpu.throw(self.player)
+                self.player_turn = 0
+            elif self.player_turn==0:
+                if self.cpu.cooldown==1:
+                    self.player_turn = 2
+                elif self.player.cooldown==2:
+                    self.player_turn = 1
+
+
+            # Check if both cooldowns are 0
+
+            if self.cpu.cooldown<=0 and self.player.cooldown<=0:
+                if self.cpu.flipped:
+                    gameScreen = GameScreen()
+                    pg.mixer.music.stop()
+                    currentScreen="success"
+                elif self.player.flipped:
+                    gameScreen = GameScreen()
+                    currentScreen="fail"
+                    pg.mixer.music.stop()
+                    playMusic("./assets/sounds/gunShotLong.wav")
+
+                # if self.cpu.cooldown<=0 and self.player.cooldown<=0:
+                #     self.player_turn = next_player
+
+            # if self.:
+            #     gameScreen = GameScreen()
+            #     currentScreen="fail"
+            #     pg.mixer.music.stop()
+            #     playMusic("./assets/sounds/gunShotLong.wav")
+            # if :
+            #     gameScreen = GameScreen()
+            #     pg.mixer.music.stop()
+            #     currentScreen="success"
+
+            # if self.player_turn==1:
+            #     self.player.hold(mouseX,mouseY)
+            # elif self.player_turn==0:
+            #     if self.cpu.cooldown>=0:
+            #         next_player = 1
+            #     elif self.player.cooldown>=0:
+            #         next_player = 2
+            #     if self.cpu.cooldown<=0 and self.player.cooldown<=0:
+            #         self.player_turn = next_player
+            # elif self.player_turn==2:
+            #     self.cpu.throw(self.player)
+            #     self.player_turn=0
+
+            for event in pg.event.get():
+                if event.type==pg.QUIT:
+                    print("Quitting game...")
+                    running = False
+                if event.type==pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE or event.key == pg.K_p:
+                        self.paused = not self.paused
+                        if self.paused:
+                            pg.mixer.music.pause()
+                elif event.type==pg.MOUSEBUTTONDOWN:
+                    if self.player_turn==1:
+                        self.player.throw(self.cpu)
+                        self.player_turn=0
+
+                # elif event.type==pg.MOUSEBUTTONUP:
+                #     if self.player_turn==1:
+                #         distance = 0.1*math.sqrt((mouseX-self.tempMarble.x)**2+(mouseY-self.tempMarble.y)**2)
+                #         angle = math.atan2(self.tempMarble.y-mouseY,self.tempMarble.x-mouseX)
+                #         vx = 0
+                #         vy = 0
+                #         if distance<10:
+                #             vx = distance*math.cos(angle)
+                #             vy = distance*math.sin(angle)
+                #         else:
+                #             vx = 10*math.cos(angle)
+                #             vy = 10*math.sin(angle)
+                #         self.marbles.append(Marble(self.tempMarble.x,self.tempMarble.y,self.tempMarble.r,(0+random.randint(0,60),127+random.randint(-30,30),50+random.randint(-30,30)),False,vx=vx,vy=vy,max_speed=10,player=1))
+                        
+                #         self.player_turn = 2
+        else:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    print("Quitting game...")
+                    running = False
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE or event.key == pg.K_p:
+                        self.paused = not self.paused
+                        pg.mixer.music.unpause()
+            pg.draw.rect(frame,Color.squid_grey,(0,0,WIDTH,HEIGHT))
+            renderText("Paused",WIDTH/2,HEIGHT/3,fontSize=40)
+            renderText("Press 'Esc' or 'P' to resume game!",WIDTH/2,HEIGHT/2.5,fontSize=20)
+            self.restartBtn.show()
+            self.exitBtn.show()
     
 gameScreen = GameScreen()
 
@@ -899,7 +1106,7 @@ while running:
     if (currentScreen=="fail"):
         gameScreen.showFailureScreen()
     if (currentScreen=="redLightGreenLightHelp" 
-    or currentScreen=="marblesHelp"):
+    or currentScreen=="marblesHelp" or currentScreen=="ddakjiHelp"):
         gameScreen.showHelpScreen()
     if (currentScreen=="redLightGreenLight"):
         if type(gameScreen).__name__=="RedLightGreenLight":
@@ -908,6 +1115,9 @@ while running:
         if type(gameScreen).__name__=="MarblesGame":
             # Leaving type1 at the moment - will add in more styles!
             gameScreen.showType1()
+    if (currentScreen=="ddakji"):
+        if type(gameScreen).__name__=="DdakjiGame":
+            gameScreen.show()
         # gameScreen.showRedLightGreenLightScreen()
     for i in range(1,11):
         if (currentScreen=="level"+str(i)):
@@ -925,20 +1135,20 @@ while running:
                 gameScreen.backBtn.click(event)
                 for lvlBtn in gameScreen.lvlNumBtns:
                     lvlBtn.click(event)
-            if currentScreen=="redLightGreenLightHelp" or currentScreen=="marblesHelp":
+            if currentScreen=="redLightGreenLightHelp" or currentScreen=="marblesHelp" or currentScreen=="ddakjiHelp":
                 gameScreen.levelBackBtn.click(event)
                 gameScreen.startBtn.click(event)
             if currentScreen=="success":
                 gameScreen.returnLvlsBtn.click(event)
             if currentScreen=="fail":
                 gameScreen.returnLvlsBtn.click(event)
-        elif (type(gameScreen).__name__=="RedLightGreenLight" or type(gameScreen).__name__=="MarblesGame"):
+        elif (type(gameScreen).__name__=="RedLightGreenLight" or type(gameScreen).__name__=="MarblesGame" or type(gameScreen).__name__=="DdakjiGame"):
             gameScreen.restartBtn.click(event)
             gameScreen.exitBtn.click(event)
         # elif (type(gameScreen).__name__=="MarblesGame"):
             
         # elif event.type == pg.MOUSEBUTTONDOWN:
-        #     print("mouse is down")
+        #     print("mouse is down") 
         # elif event.type == pg.MOUSEBUTTONUP:
         #     print("mouse is up")
     pg.display.update()
