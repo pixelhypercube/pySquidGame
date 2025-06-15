@@ -15,12 +15,18 @@ helper = Helper()
 class RedLightGreenLightHelp(RedLightGreenLight):
     def __init__(self):
         super().__init__()
-        self.back_btn = Button(80,HEIGHT/5,50,25,content="Back",next_screen="home")
-        self.start_btn = Button(WIDTH/2,HEIGHT/1.35,60,20,content="Start",next_screen="red_light_green_light")
+        self.back_btn = Button(80,HEIGHT/10,50,25,content="Back",next_screen="levels")
+        self.start_btn = Button(WIDTH/2,HEIGHT/1.33,60,20,content="Start",next_screen="red_light_green_light")
         self.buttons = [
             self.back_btn,self.start_btn
         ]
-    
+
+    def keydown_listener(self, event):
+        pass
+
+    def keyup_listener(self, event):
+        pass
+
     def render(self,frame,mouse_x,mouse_y):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
         helper.render_text(frame,"How to play:",WIDTH/2,HEIGHT/12,font_size=40)

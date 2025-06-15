@@ -20,6 +20,13 @@ class Color:
     BLACK = (0,0,0)
     LIGHT_BLUE = (0,125,255)
     SKY_BLUE = (118,222,245)
-    
+
+    def get_color(r,g,b):
+        return (r,g,b)
     def get_random_color():
         return (random.randint(0,255), random.randint(0,255), random.randint(0,255))
+    def get_random_color_from_base(base_color):
+        r = (base_color[0] + random.randint(-20, 20)) % 256
+        g = (base_color[1] + random.randint(-20, 20)) % 256
+        b = (base_color[2] + random.randint(-20, 20)) % 256
+        return (r, g, b)

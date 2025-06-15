@@ -15,8 +15,14 @@ helper = Helper()
 class Home(GameHandler):
     def __init__(self):
         super().__init__(0, 0, Color.SQUID_GREY)
-        self.play_btn = Button(WIDTH/2,HEIGHT/1.35,90,50,content="",next_screen="levels",visible=False)
+        self.play_btn = Button(WIDTH/2,HEIGHT/1.35,90,50,content="",next_screen="levels",visible=True)
         self.buttons = [self.play_btn]
+
+    def keydown_listener(self, event):
+        pass
+
+    def keyup_listener(self, event):
+        pass
 
     def render(self, frame, mouse_x, mouse_y):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))

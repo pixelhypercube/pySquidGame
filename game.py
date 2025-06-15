@@ -38,7 +38,17 @@ while running:
         if event.type == pg.QUIT:
             print("Quitting the game...")
             running = False
-    current_screen = screen.handle_buttons(event, mouse_x, mouse_y, current_screen)
+        if event.type == pg.KEYDOWN:
+            screen.keydown_listener(event.key)
+        if event.type == pg.KEYUP:
+            screen.keyup_listener(event.key)
+    
+    next_screen = screen.handle_buttons(event, mouse_x, mouse_y, current_screen)
+    if (next_screen != current_screen) and (next_screen in screens):
+        current_screen = next_screen
+        screen = screens[current_screen]
+        if hasattr(screen, 'restart_game'):
+            screen.restart_game()
 
     screen = screens[current_screen]
     screen.render(frame, mouse_x, mouse_y)

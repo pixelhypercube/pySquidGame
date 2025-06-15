@@ -31,6 +31,12 @@ class Levels(GameHandler):
                 self.lvl_num_btns.append(Button((i-3)*200,(HEIGHT/2)+160,90,50,content=self.game_names[i-1],next_screen="levels",function=None,image_path="./assets/img/levels/"+self.game_image_names[i-1]+".png"))
         self.buttons = [self.back_btn] + self.lvl_num_btns
 
+    def keydown_listener(self, event):
+        pass
+
+    def keyup_listener(self, event):
+        pass
+
     def render(self, frame, mouse_x, mouse_y):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
         helper.render_text(frame,"Choose a stage!",WIDTH/2,HEIGHT/5,font_size=40)

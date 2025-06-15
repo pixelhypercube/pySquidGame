@@ -6,7 +6,7 @@ from Settings import WIDTH, HEIGHT
 helper = Helper()
 
 class Button:
-    def __init__(self,x,y,w,h,content="",color=Color.SQUID_PURPLE,hover_color=Color.SQUID_PURPLE2,clicked_color=Color.SQUID_PINK,text_color=Color.WHITE,next_screen=None,function=None,image_path=None,visible=True):
+    def __init__(self,x,y,w,h,content="",color=Color.SQUID_PURPLE,hover_color=Color.SQUID_PURPLE2,clicked_color=Color.SQUID_PINK,text_color=Color.WHITE,next_screen=None,function=lambda:None,image_path=None,visible=True):
         self.x = x
         self.y = y
         self.w = w
@@ -36,7 +36,7 @@ class Button:
     def on_mouseup(self,current_screen):
         if self.next_screen is not None:
             return self.next_screen
-        else:
+        elif self.visible:
             self.function()
             return current_screen
     def detect_mouseover(self,x,y):
