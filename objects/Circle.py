@@ -8,7 +8,7 @@ from Settings import WIDTH, HEIGHT
 from scipy.spatial import KDTree
 
 class Circle:
-    def __init__(self,x,y,r,color,max_speed=0.5,stroke_color=Color.BLACK,stroke_thickness=1):
+    def __init__(self,x,y,r,color,max_speed=0.5,stroke_color=Color.BLACK,stroke_thickness=1,game_state=-1):
         self.pos = [x,y]
         self.color = color
         self.r = r
@@ -18,6 +18,7 @@ class Circle:
         self.friction = 0.05
         self.stroke_color = stroke_color
         self.stroke_thickness = stroke_thickness
+        self.game_state = game_state
 
     def render(self,frame):
         x,y = self.pos

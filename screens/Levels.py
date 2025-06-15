@@ -21,14 +21,14 @@ class Levels(GameHandler):
 
         for i in range(1,4):
             if i==1:
-                self.lvl_num_btns.append(Button(i*200,(HEIGHT/2)+30,90,50,content=self.game_names[i-1],next_screen=self.game_image_names[i-1]+"_help",function=None,image_path="./assets/img/levels/"+self.game_image_names[i-1]+".png"))
+                self.lvl_num_btns.append(Button(i*200,(HEIGHT/2)+30,90,50,content=self.game_names[i-1],next_screen=self.game_image_names[i-1],function=None,image_path="./assets/img/levels/"+self.game_image_names[i-1]+".png"))
             else:
-                self.lvl_num_btns.append(Button(i*200,(HEIGHT/2)+30,90,50,content=self.game_names[i-1],next_screen="levels",function=None,image_path="./assets/img/levels/"+self.game_image_names[i-1]+".png"))
+                self.lvl_num_btns.append(Button(i*200,(HEIGHT/2)+30,90,50,content=self.game_names[i-1],next_screen=self.game_image_names[i-1],function=None,image_path="./assets/img/levels/"+self.game_image_names[i-1]+".png"))
         for i in range(4,7):
             if i==4:
-                self.lvl_num_btns.append(Button((i-3)*200,(HEIGHT/2)+160,90,50,content=self.game_names[i-1],next_screen=self.game_image_names[i-1]+"_help",function=None,image_path="./assets/img/levels/"+self.game_image_names[i-1]+".png"))
+                self.lvl_num_btns.append(Button((i-3)*200,(HEIGHT/2)+160,90,50,content=self.game_names[i-1],next_screen=self.game_image_names[i-1],function=None,image_path="./assets/img/levels/"+self.game_image_names[i-1]+".png"))
             else:
-                self.lvl_num_btns.append(Button((i-3)*200,(HEIGHT/2)+160,90,50,content=self.game_names[i-1],next_screen="levels",function=None,image_path="./assets/img/levels/"+self.game_image_names[i-1]+".png"))
+                self.lvl_num_btns.append(Button((i-3)*200,(HEIGHT/2)+160,90,50,content=self.game_names[i-1],next_screen=self.game_image_names[i-1],function=None,image_path="./assets/img/levels/"+self.game_image_names[i-1]+".png"))
         self.buttons = [self.back_btn] + self.lvl_num_btns
 
     def keydown_listener(self, event):

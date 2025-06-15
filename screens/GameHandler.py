@@ -15,6 +15,7 @@ class GameHandler:
         self.bg_color = bg_color
         self.in_game_frame_count = 0
         self.buttons = []
+        self.paused = True
     def render_prep_screen(self,frame,time_left):
         pg.draw.rect(frame,Color.SQUID_GREY,(WIDTH/2-80,HEIGHT/4-30,160,80))
         helper.render_text(frame,"Get ready in",WIDTH/2,HEIGHT/4-10,font_size=20)

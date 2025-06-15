@@ -40,18 +40,21 @@ class RedLightGreenLight(GameHandler):
             self.start_wall
         ]
 
-        self.paused = False
         self.restart_btn = Button(WIDTH/2,HEIGHT/2,100,25,content="Restart Game",visible=self.paused,function=lambda:self.restart_game())
         self.exit_btn = Button(WIDTH/2,HEIGHT/2+75,100,25,content="Exit Game",next_screen="levels",visible=self.paused)
+        
+        self.help_start_btn = Button(WIDTH/2,HEIGHT/1.33,60,20,content="Start")
+        self.help_back_btn = Button(80, HEIGHT / 10, 50, 25, content="Back", next_screen="levels")
 
         self.max_shot_vel = 0.06
         self.red_light_cooldown = 1 # seconds
         self.cooldown_time = 0
 
         # fail/success screen
-        self.game_state = 0 # 0: in game, 1: win, 2: lose
         self.return_lvls_btn = Button(WIDTH/2,HEIGHT/1.6,100,30,content="Go back",next_screen="levels",visible=self.paused)
-        self.buttons = [self.restart_btn, self.exit_btn,self.return_lvls_btn]
+        self.buttons = [
+            self.help_start_btn,self.help_back_btn,self.restart_btn,self.exit_btn,self.return_lvls_btn
+        ]
 
 
     def restart_game(self):
@@ -69,8 +72,11 @@ class RedLightGreenLight(GameHandler):
             Block(WIDTH-self.wall_thickness,0,self.wall_thickness,HEIGHT,Color.SKY_BLUE),
             self.start_wall
         ]
-        self.paused = False
-        self.game_state = 0
+        self.paused = True
+        self.game_state = -1 # help screen
+        self.help_back_btn.visible = True
+        self.help_start_btn.visible = True
+        
         self.restart_btn.visible = False
         self.exit_btn.visible = False
         self.return_lvls_btn.visible = False
@@ -135,24 +141,33 @@ class RedLightGreenLight(GameHandler):
         self.restart_btn.render(frame)
         self.exit_btn.render(frame)
 
-    def toggle_win_lose(self,frame,state):
-        self.paused = True
+    def toggle_game_state(self,frame,state):
         self.game_state = state
         if state==1:
+            self.paused = True
             self.return_lvls_btn.visible = True
             self.render_success(frame)
         elif state==2:
+            self.paused = True
             self.return_lvls_btn.visible = True
             self.render_fail(frame)
+        elif state==0:
+            self.paused = False
+            self.help_back_btn.visible = False
+            self.help_start_btn.visible = False
+        elif state==-1:
+            self.paused = True
+            self.return_lvls_btn.visible = False
+            self.render_help(frame)
 
     def render(self, frame, mouse_x, mouse_y):
         if not self.paused:
             frame.fill(self.bg_color)
 
             if self.is_red_light or (self.preparation_time*60-self.in_game_frame_count>0):
-                helper.render_image(frame,"./assets/img/dollFront.png",WIDTH/2,HEIGHT/12,[40,40])
+                helper.render_image(frame,"./assets/img/rlgl/dollFront.png",WIDTH/2,HEIGHT/12,[40,40])
             else:
-                helper.render_image(frame,"./assets/img/dollBack.png",WIDTH/2,HEIGHT/12,[40,40])
+                helper.render_image(frame,"./assets/img/rlgl/dollBack.png",WIDTH/2,HEIGHT/12,[40,40])
 
             # OBJECT RENDERING
             for wall_block in self.wall_blocks:
@@ -220,11 +235,11 @@ class RedLightGreenLight(GameHandler):
 
                 # win
                 if (self.player.pos[1] <= self.finish_y and not self.is_red_light) or (self.time_left <= 0 and not self.is_red_light):
-                    self.toggle_win_lose(frame,1)
+                    self.toggle_game_state(frame,1)
                 # lose
                 if self.cooldown_time>self.red_light_cooldown*60 and self.player.get_scalar_vel() > self.max_shot_vel:
                     helper.play_sound("./assets/sounds/gunShotLong.wav")
-                    self.toggle_win_lose(frame,2)
+                    self.toggle_game_state(frame,2)
 
                 self.time_left-=1
                 if self.interval_duration_left<=0:
@@ -240,6 +255,8 @@ class RedLightGreenLight(GameHandler):
                 self.render_success(frame)
             elif self.game_state == 2:
                 self.render_fail(frame)
+            elif self.game_state == -1:
+                self.render_help(frame)
             else:
                 self.render_paused(frame)
     
@@ -255,3 +272,16 @@ class RedLightGreenLight(GameHandler):
         helper.render_text(frame,"Thanks a lot for playing! Since this program is in beta,",WIDTH/2,HEIGHT/2.4,font_size=20)
         helper.render_text(frame,"there are 4 games are currently in progress!",WIDTH/2,HEIGHT/2.1,font_size=20)
         self.return_lvls_btn.render(frame)
+    def render_help(self,frame):
+        pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
+        helper.render_text(frame,"How to play:",WIDTH/2,HEIGHT/12,font_size=40)
+        helper.render_text(frame,"Run to the finish line before the time runs out!",WIDTH/2,HEIGHT/7,font_size=20)
+        helper.render_image(frame,"./assets/img/rlgl/demoWithLabels.png",WIDTH/2,HEIGHT/2.25,[int(500/2.5),int(375/2.5)])
+        helper.render_text(frame,"When the doll faces you, freeze!",WIDTH/2,HEIGHT/1.21,font_size=20)
+        helper.render_text(frame,"Otherwise, you'll be eliminated!",WIDTH/2,HEIGHT/1.16,font_size=20)
+        helper.render_text(frame,"Use the WASD keys to move",WIDTH/2,HEIGHT/1.1,font_size=20)
+        helper.render_text(frame,"Repeatedly press SPACE if you want to boost your speed!",WIDTH/2,HEIGHT/1.06,font_size=20)
+        
+        self.help_start_btn.render(frame)
+        self.help_back_btn.render(frame)
+        self.help_start_btn.function = lambda: self.toggle_game_state(frame,0) 

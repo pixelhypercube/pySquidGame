@@ -7,14 +7,22 @@ from Settings import WIDTH, HEIGHT
 from screens.Home import Home
 from screens.Levels import Levels
 from screens.RedLightGreenLight import RedLightGreenLight
-from screens.RedLightGreenLightHelp import RedLightGreenLightHelp
+from screens.HoneyComb import HoneyComb
+from screens.TugOfWar import TugOfWar
+from screens.Marbles import Marbles
+from screens.GlassSteppingStones import GlassSteppingStones
+from screens.SquidGame import SquidGame
 
 current_screen = "home"
 screens = {
     "home":Home(),
     "levels":Levels(),
-    "red_light_green_light_help": RedLightGreenLightHelp(),
     "red_light_green_light": RedLightGreenLight(),
+    "honey_comb": HoneyComb(),
+    "tug_of_war": TugOfWar(),
+    "marbles": Marbles(),
+    "glass_stepping_stones": GlassSteppingStones(),
+    "squid_game": SquidGame()  
 }
 
 # The game
@@ -28,6 +36,9 @@ clock = pg.time.Clock()
 screen = screens[current_screen]
 
 frame_count = 0
+
+button_cooldown = frame_count + 30
+
 while running:
     clock.tick(60)
     mouse_x = pg.mouse.get_pos()[0]
@@ -43,8 +54,9 @@ while running:
         if event.type == pg.KEYUP:
             screen.keyup_listener(event.key)
     
-    next_screen = screen.handle_buttons(event, mouse_x, mouse_y, current_screen)
+    next_screen = screen.handle_buttons(event, mouse_x, mouse_y, current_screen) if button_cooldown<=frame_count else current_screen
     if (next_screen != current_screen) and (next_screen in screens):
+        button_cooldown = frame_count + 30
         current_screen = next_screen
         screen = screens[current_screen]
         if hasattr(screen, 'restart_game'):

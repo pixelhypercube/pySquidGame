@@ -20,6 +20,7 @@ class Color:
     BLACK = (0,0,0)
     LIGHT_BLUE = (0,125,255)
     SKY_BLUE = (118,222,245)
+    HONEYCOMB_YELLOW = (255, 200, 0)
 
     def get_color(r,g,b):
         return (r,g,b)
