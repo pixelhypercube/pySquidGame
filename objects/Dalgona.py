@@ -6,10 +6,11 @@ import random
 import math
 
 class Dalgona(Circle):
-    def __init__(self, x, y, r, color, shape, max_speed=0.5, stroke_color=Color.SQUID_GREY,stroke_thickness=10):
+    def __init__(self, x, y, r, color, shape, max_speed=0.5, stroke_color=Color.HONEYCOMB_DARK_YELLOW,tin_color=Color.DARK_GREY,stroke_thickness=8):
         super().__init__(x, y, r, color, max_speed, stroke_color, stroke_thickness)
         self.shape = shape
-        self.dalgona_shapes = ["circle", "star", "triangle", "umbrella"]
+        self.tin_color = tin_color
+        self.dalgona_shapes = ["circle", "star", "square", "umbrella"]
     def draw_star(self, frame, x, y):
         points = []
         num_points = 5
@@ -27,14 +28,8 @@ class Dalgona(Circle):
         if self.stroke_thickness > 0:
             pg.draw.polygon(frame, self.stroke_color, points, self.stroke_thickness)
 
-    def draw_triangle(self, frame, x, y):
-        points = [
-            (x, y - self.r/2),
-            (x - self.r/2 * 0.866, y + self.r/2 * 0.5),
-            (x + self.r/2 * 0.866, y + self.r/2 * 0.5)
-        ]
-        pg.draw.polygon(frame, self.color, points)
-        pg.draw.polygon(frame, self.stroke_color, points, self.stroke_thickness//2)
+    def draw_square(self, frame, x, y):
+        pg.draw.rect(frame,self.stroke_color,pg.Rect(x-self.r//2,y-self.r//2,self.r,self.r),width=self.stroke_thickness//2)
 
     def draw_umbrella(self, frame, x, y):
         # Top arc (main umbrella)
@@ -117,14 +112,14 @@ class Dalgona(Circle):
 
     def render(self,frame):
         x, y = self.pos
-        pg.draw.circle(frame, self.stroke_color, (int(x), int(y)), int(self.r) + self.stroke_thickness)
+        pg.draw.circle(frame, self.tin_color, (int(x), int(y)), int(self.r) + self.stroke_thickness)
         pg.draw.circle(frame, self.color, (int(x), int(y)), int(self.r))
         
         if (self.shape == "star"):
             self.draw_star(frame, x, y)
         elif (self.shape == "circle"):
             pg.draw.circle(frame, self.stroke_color, (int(x), int(y)), int(self.r//2),width=self.stroke_thickness//2)
-        elif (self.shape == "triangle"):
-            self.draw_triangle(frame, x, y)
+        elif (self.shape == "square"):
+            self.draw_square(frame, x, y)
         elif (self.shape == "umbrella"):
             self.draw_umbrella(frame, x, y)

@@ -7,7 +7,7 @@ class Block:
         self.dim = [w,h]
         self.color = color
         self.stroke_thickness = stroke_thickness
-        self.stroke_color = Color.BLACK
+        self.stroke_color = stroke_color
     def render(self,frame):
         pg.draw.rect(frame,self.stroke_thickness,(self.pos[0]-self.stroke_thickness, self.pos[1]-self.stroke_thickness, self.dim[0]+self.stroke_thickness*2, self.dim[1]+self.stroke_thickness*2))
         pg.draw.rect(frame,self.color,(self.pos[0], self.pos[1], self.dim[0], self.dim[1]))

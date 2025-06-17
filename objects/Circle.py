@@ -50,16 +50,16 @@ class Circle:
         filtered_circles = [circle for circle in circles if circle != self]
         return filtered_circles[index]
 
-    def detect_nearest_wall(self, walls):
+    def detect_nearest_block(self, blocks):
         min_dist = float('inf')
         nearest = None
         cx, cy = self.pos
 
-        for wall in walls:
-            wall_x, wall_y, wall_w, wall_h = wall.pos[0], wall.pos[1], wall.dim[0], wall.dim[1]
+        for block in blocks:
+            block_x, block_y, block_w, block_h = block.pos[0], block.pos[1], block.dim[0], block.dim[1]
 
-            closest_x = max(wall_x, min(cx, wall_x + wall_w))
-            closest_y = max(wall_y, min(cy, wall_y + wall_h))
+            closest_x = max(block_x, min(cx, block_x + block_w))
+            closest_y = max(block_y, min(cy, block_y + block_h))
 
             dx = cx - closest_x
             dy = cy - closest_y
@@ -67,18 +67,18 @@ class Circle:
 
             if dist_sq < min_dist:
                 min_dist = dist_sq
-                nearest = wall
+                nearest = block
 
         return nearest
 
 
-    def detect_wall_contact(self, wall):
-        wall_x, wall_y, wall_w, wall_h = wall.pos[0], wall.pos[1], wall.dim[0], wall.dim[1]
+    def detect_block_contact(self, block):
+        block_x, block_y, block_w, block_h = block.pos[0], block.pos[1], block.dim[0], block.dim[1]
         cx, cy = self.pos
         r = self.r
 
-        closest_x = max(wall_x, min(cx, wall_x + wall_w))
-        closest_y = max(wall_y, min(cy, wall_y + wall_h))
+        closest_x = max(block_x, min(cx, block_x + block_w))
+        closest_y = max(block_y, min(cy, block_y + block_h))
 
         dx = cx - closest_x
         dy = cy - closest_y
@@ -98,12 +98,12 @@ class Circle:
             circle.vel[0] -= math.cos(angle) * 0.4
             circle.vel[1] -= math.sin(angle) * 0.4
     
-    def contact_wall(self, wall):
-        wall_x, wall_y, wall_w, wall_h = wall.pos[0], wall.pos[1], wall.dim[0], wall.dim[1]
+    def contact_block(self, block):
+        block_x, block_y, block_w, block_h = block.pos[0], block.pos[1], block.dim[0], block.dim[1]
         cx, cy = self.pos
 
-        closest_x = max(wall_x, min(cx, wall_x + wall_w))
-        closest_y = max(wall_y, min(cy, wall_y + wall_h))
+        closest_x = max(block_x, min(cx, block_x + block_w))
+        closest_y = max(block_y, min(cy, block_y + block_h))
 
         dx = cx - closest_x
         dy = cy - closest_y

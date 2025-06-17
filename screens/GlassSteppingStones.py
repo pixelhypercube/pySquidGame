@@ -16,3 +16,5 @@ helper = Helper()
 class GlassSteppingStones(GameHandler):
     def __init__(self, time=60, preparation_time=5, bg_color=Color.SAND,start_y=HEIGHT-100,finish_y=100,time_left=60,player_size=10,wall_thickness=10):
         super().__init__(time, preparation_time, bg_color)
+    
+    

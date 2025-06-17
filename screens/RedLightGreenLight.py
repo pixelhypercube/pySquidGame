@@ -30,14 +30,14 @@ class RedLightGreenLight(GameHandler):
         self.interval_duration_left = self.red_green_interval * 60
         self.is_red_light = False
 
-        self.start_wall = Block(0, start_y, WIDTH, 5, Color.RED)
+        self.start_block = Block(0, start_y, WIDTH, 5, Color.RED)
 
         self.wall_blocks = [
             Block(0,0,WIDTH,self.wall_thickness,Color.SKY_BLUE),
             Block(0,0,self.wall_thickness,HEIGHT,Color.SKY_BLUE),
             Block(0,HEIGHT-self.wall_thickness,WIDTH,self.wall_thickness,Color.SKY_BLUE),
             Block(WIDTH-self.wall_thickness,0,self.wall_thickness,HEIGHT,Color.SKY_BLUE),
-            self.start_wall
+            self.start_block
         ]
 
         self.restart_btn = Button(WIDTH/2,HEIGHT/2,100,25,content="Restart Game",visible=self.paused,function=lambda:self.restart_game())
@@ -70,7 +70,7 @@ class RedLightGreenLight(GameHandler):
             Block(0,0,self.wall_thickness,HEIGHT,Color.SKY_BLUE),
             Block(0,HEIGHT-self.wall_thickness,WIDTH,self.wall_thickness,Color.SKY_BLUE),
             Block(WIDTH-self.wall_thickness,0,self.wall_thickness,HEIGHT,Color.SKY_BLUE),
-            self.start_wall
+            self.start_block
         ]
         self.paused = True
         self.game_state = -1 # help screen
@@ -187,20 +187,20 @@ class RedLightGreenLight(GameHandler):
 
             # PLAYER COLLISION DETECTION
             player1 = self.player.detect_nearest_circle(self.players)
-            adj_wall = self.player.detect_nearest_wall(self.wall_blocks)
-            if adj_wall is not None:
-                if self.player.detect_wall_contact(adj_wall):
-                    self.player.contact_wall(adj_wall)
+            adj_block = self.player.detect_nearest_block(self.wall_blocks)
+            if adj_block is not None:
+                if self.player.detect_block_contact(adj_block):
+                    self.player.contact_block(adj_block)
             if player1 is not None:
                 if self.player.detect_circle_contact(player1.pos):
                     self.player.contact_circle(player1)
         
             # OTHER PLAYERS COLLISION DETECTION
             for player in self.players:
-                adj_wall = player.detect_nearest_wall(self.wall_blocks)
-                if adj_wall is not None:
-                    if player.detect_wall_contact(adj_wall):
-                        player.contact_wall(adj_wall)
+                adj_block = player.detect_nearest_block(self.wall_blocks)
+                if adj_block is not None:
+                    if player.detect_block_contact(adj_block):
+                        player.contact_block(adj_block)
                 player1 = player.detect_nearest_circle(self.players)
                 if player1 is not None:
                     if player.detect_circle_contact(player1.pos):
@@ -219,7 +219,7 @@ class RedLightGreenLight(GameHandler):
             if (in_preparation):
                 self.render_prep_screen(frame,int((self.preparation_time*60-self.in_game_frame_count)/60)+1)
             elif (self.preparation_time*60-self.in_game_frame_count==0):
-                self.wall_blocks.remove(self.start_wall)
+                self.wall_blocks.remove(self.start_block)
                 helper.play_music("./assets/sounds/greenLight.wav")
             else:
                 # jitter players

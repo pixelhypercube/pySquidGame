@@ -53,6 +53,9 @@ while running:
             screen.keydown_listener(event.key)
         if event.type == pg.KEYUP:
             screen.keyup_listener(event.key)
+        
+        if hasattr(screen,"mousedown_listener"):
+            screen.mousedown_listener(event,mouse_x,mouse_y)
     
     next_screen = screen.handle_buttons(event, mouse_x, mouse_y, current_screen) if button_cooldown<=frame_count else current_screen
     if (next_screen != current_screen) and (next_screen in screens):
