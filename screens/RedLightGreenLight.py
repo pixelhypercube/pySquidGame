@@ -274,7 +274,7 @@ class RedLightGreenLight(GameHandler):
         self.return_lvls_btn.render(frame)
     def render_help(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
-        helper.render_text(frame,"How to play:",WIDTH/2,HEIGHT/12,font_size=40)
+        helper.render_text(frame,"How to play: Red Light, Green Light",WIDTH/2,HEIGHT/12,font_size=40)
         helper.render_text(frame,"Run to the finish line before the time runs out!",WIDTH/2,HEIGHT/7,font_size=20)
         helper.render_image(frame,"./assets/img/rlgl/demoWithLabels.png",WIDTH/2,HEIGHT/2.25,[int(500/2.5),int(375/2.5)])
         helper.render_text(frame,"When the doll faces you, freeze!",WIDTH/2,HEIGHT/1.21,font_size=20)

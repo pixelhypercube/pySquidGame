@@ -11,6 +11,7 @@ class Color:
     SQUID_TEAL = (55,161,142)
     SQUID_LIGHT_TEAL = (80,217,192)
     SAND = (243,231,179)
+    SAND_DARK = (110,101,76)
     RED = (255,40,0)
     YELLOW = (200,210,0)
     ORANGE = (185,105,0)
@@ -20,8 +21,8 @@ class Color:
     BLACK = (0,0,0)
     LIGHT_BLUE = (0,125,255)
     SKY_BLUE = (118,222,245)
-    HONEYCOMB_YELLOW = (255, 200, 0)
-    HONEYCOMB_DARK_YELLOW = (127, 100, 0)
+    HONEYCOMB_YELLOW = (255,200,0)
+    HONEYCOMB_DARK_YELLOW = (127,100,0)
 
     def get_color(r,g,b):
         return (r,g,b)

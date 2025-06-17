@@ -93,10 +93,10 @@ class Circle:
         distance = math.sqrt((self.pos[0]-circle.pos[0])**2+(self.pos[1]-circle.pos[1])**2)
         if (distance<circle.r+self.r):
             angle = math.atan2(self.pos[1]-circle.pos[1],self.pos[0]-circle.pos[0])
-            self.vel[0] += math.cos(angle) * 0.4
-            self.vel[1] += math.sin(angle) * 0.4
-            circle.vel[0] -= math.cos(angle) * 0.4
-            circle.vel[1] -= math.sin(angle) * 0.4
+            self.vel[0] += math.cos(angle) * 0.3
+            self.vel[1] += math.sin(angle) * 0.3
+            circle.vel[0] -= math.cos(angle) * 0.3
+            circle.vel[1] -= math.sin(angle) * 0.3
     
     def contact_block(self, block):
         block_x, block_y, block_w, block_h = block.pos[0], block.pos[1], block.dim[0], block.dim[1]
