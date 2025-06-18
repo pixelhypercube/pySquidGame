@@ -281,7 +281,20 @@ class Marbles(GameHandler):
                 self.render_paused(frame)
     
     def keydown_listener(self,key):
-        pass
+        if key == pg.K_ESCAPE or key == pg.K_p:
+            if self.game_state == 0:
+                self.toggle_paused()
+
+    def toggle_paused(self):
+        self.paused = not self.paused
+
+        if self.paused:
+            pg.mixer.music.pause()
+        else:
+            pg.mixer.music.unpause()
+
+        self.restart_btn.visible = self.paused
+        self.exit_btn.visible = self.paused
 
     def keyup_listener(self,key):
         pass
