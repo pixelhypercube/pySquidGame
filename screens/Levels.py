@@ -15,7 +15,7 @@ class Levels(GameHandler):
     def __init__(self):
         super().__init__(0, 0, Color.SQUID_GREY)
         self.lvl_num_btns = []
-        self.game_names = ["Red Light,\n Green Light","Honeycomb \n(Coming Soon!)","Tug Of War \n(Coming Soon!)","Marbles \n(Coming Soon!)","Glass Stepping\n Stones \n(Coming Soon!)","Squid Game \n(Coming Soon!)"]
+        self.game_names = ["Red Light,\n Green Light","Honeycomb","Tug Of War","Marbles","Glass Stepping\n Stones","Squid Game"]
         self.game_image_names = ["red_light_green_light","honey_comb","tug_of_war","marbles","glass_stepping_stones","squid_game"]
         self.back_btn = Button(80,HEIGHT/5,50,25,content="Back",next_screen="home")
 

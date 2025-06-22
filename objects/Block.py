@@ -15,3 +15,7 @@ class Block:
         for i in range(len(self.pos)):
             self.pos[i] += self.vel[i]
             self.vel[i] *= 0.95
+    def contains(self, x, y):
+        o_x,o_y = self.pos
+        w,h = self.dim
+        return o_x <= x <= o_x + w and o_y <= y <= o_y + h

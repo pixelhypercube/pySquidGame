@@ -23,6 +23,7 @@ class Color:
     SKY_BLUE = (118,222,245)
     HONEYCOMB_YELLOW = (255,200,0)
     HONEYCOMB_DARK_YELLOW = (127,100,0)
+    STONE = (93,110,118)
 
     def get_color(r,g,b):
         return (r,g,b)

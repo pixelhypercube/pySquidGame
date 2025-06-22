@@ -23,7 +23,8 @@ class Circle:
     def render(self,frame):
         x,y = self.pos
         pg.draw.circle(frame,self.stroke_color,(int(x),int(y)),int(self.r)+self.stroke_thickness)
-        pg.draw.circle(frame,self.color,(int(x),int(y)),int(self.r))
+        if not self.transparent:
+            pg.draw.circle(frame,self.color,(int(x),int(y)),int(self.r))
 
         # update position
         for i in range(len(self.pos)):
@@ -88,6 +89,10 @@ class Circle:
         dy = self.pos[1] - circle_pos[1]
         return dx * dx + dy * dy < (self.r * 4) ** 2
 
+    def get_other_circle_dist(self,circle):
+        x,y = self.pos
+        oc_x,oc_y = circle.pos
+        return math.hypot(oc_x-x,oc_y-y)
 
     def contact_circle(self,circle):
         distance = math.sqrt((self.pos[0]-circle.pos[0])**2+(self.pos[1]-circle.pos[1])**2)
@@ -115,3 +120,7 @@ class Circle:
         push_strength = 2
         self.vel[0] += (dx / distance) * push_strength
         self.vel[1] += (dy / distance) * push_strength
+    
+    def contains(self, x, y):
+        o_x,o_y = self.pos
+        return (o_x-x)**2 + (o_y-y)**2 <= self.r**2
