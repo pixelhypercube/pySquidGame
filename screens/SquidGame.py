@@ -44,7 +44,7 @@ class SquidGame(GameHandler):
 
         self.hopping_cooldown = 25
         self.next_hopping_cooldown = self.in_game_frame_count + self.hopping_cooldown
-        self.attack_cooldown = 20
+        self.attack_cooldown = 10
         self.next_attack_cooldown = self.in_game_frame_count + self.attack_cooldown
 
         self.keys_held = {
@@ -64,6 +64,8 @@ class SquidGame(GameHandler):
 
         self.board_F1 = Block(WIDTH//2-20,HEIGHT//10,44,HEIGHT//2-30-HEIGHT//10,Color.WHITE)
         self.board_F2 = Block(WIDTH//2-20,HEIGHT//2+30,44,HEIGHT//2-30-HEIGHT//10,Color.WHITE)
+
+        self.time_left = time_left*60
 
     def point_in_triangle(self, pt, v1, v2, v3):
         def sign(p1, p2, p3):
@@ -173,7 +175,7 @@ class SquidGame(GameHandler):
                         player_2.move(-vx,-vy)
                 else:
                     if self.in_game_frame_count==self.next_hopping_cooldown:
-                        player_2.move(-vx,0 if p2_x>WIDTH//2 else -vy)
+                        player_2.move(1 if vx<0 else -1,0 if p2_x>WIDTH//2 else -vy)
         elif player_1_area in ["B","D"]:
             if p2_x>WIDTH//2+300:
                 if player_2_area!="None" or self.in_game_frame_count==self.next_hopping_cooldown:
@@ -236,7 +238,7 @@ class SquidGame(GameHandler):
             # crossed bridges, then don't need to hop
             if self.check_path_travelled(["E1","F1","D_Bridge","F2","E2"],self.player_1.crossed_areas):
                 self.player_1.perm_hopping_disabled = True
-            helper.render_text(frame, f"{str(self.player_1.crossed_areas)}", 100, 50, color=Color.WHITE, font_size=20)
+            # helper.render_text(frame, f"{str(self.player_1.crossed_areas)}", 100, 50, color=Color.WHITE, font_size=20)
             # squid layout
             pg.draw.circle(frame,Color.WHITE,(WIDTH//2-300,HEIGHT//2),50,width=5)
             pg.draw.circle(frame,Color.WHITE,(WIDTH//2+300,HEIGHT//2),50,width=5)
@@ -258,8 +260,8 @@ class SquidGame(GameHandler):
             pg.draw.line(frame,Color.WHITE,(WIDTH//2+20,9*HEIGHT//10),(WIDTH//2+300,9*HEIGHT//10),width=5)
 
             ax,ay = self.player_1.acc
-            ay = -1 if self.keys_held[pg.K_w] else 1 if self.keys_held[pg.K_s] else 0
-            ax = -1 if self.keys_held[pg.K_a] else 1 if self.keys_held[pg.K_d] else 0
+            ay = -0.5 if self.keys_held[pg.K_w] else 0.5 if self.keys_held[pg.K_s] else 0
+            ax = -0.5 if self.keys_held[pg.K_a] else 0.5 if self.keys_held[pg.K_d] else 0
             magnitude = math.hypot(ax,ay)
             if magnitude>0:
                 ay /= magnitude
@@ -284,6 +286,13 @@ class SquidGame(GameHandler):
                     self.attack_player(self.player_2,self.player_1)
                 self.next_attack_cooldown = self.in_game_frame_count + self.attack_cooldown
 
+            self.render_timer(10,10,frame,self.time_left)
+
+            in_preparation = self.preparation_time*60-self.in_game_frame_count>0
+            if (in_preparation):
+                self.render_prep_screen(frame,int((self.preparation_time*60-self.in_game_frame_count)/60)+1)
+            else:
+                self.time_left-=1
             self.in_game_frame_count += 1
         else:
             if self.game_state == 1:
@@ -297,7 +306,9 @@ class SquidGame(GameHandler):
 
     def keydown_listener(self,key):
         if key in self.keys_held:
-            self.keys_held[key] = True
+            in_preparation = self.preparation_time*60-self.in_game_frame_count>0
+            if not in_preparation:
+                self.keys_held[key] = True
         if key == pg.K_ESCAPE or key == pg.K_p:
             if self.game_state == 0:
                 self.toggle_paused()

@@ -10,20 +10,21 @@ import webbrowser
 from threading import Timer
 from Settings import WIDTH, HEIGHT
 from components.Button import Button
+import numpy as np
 
 helper = Helper()
 
 class RedLightGreenLight(GameHandler):
     def __init__(self, time=60, preparation_time=5, bg_color=Color.SAND,start_y=HEIGHT-100,finish_y=100,time_left=60,player_size=10,wall_thickness=10):
         super().__init__(time, preparation_time, bg_color)
-        self.player = Player(WIDTH/2, HEIGHT/1.1, 7, Color.SQUID_LIGHT_TEAL, max_speed=0.5, stroke_color=Color.SQUID_PINK,stroke_thickness=2)
         self.players = []
         self.time_left = time_left*60
         self.start_y = start_y
         self.finish_y = finish_y
         self.player_size = player_size
         self.wall_thickness = wall_thickness
-        self.gen_players(100)
+        self.player = Player(WIDTH/2, HEIGHT/1.1, self.player_size, Color.SQUID_LIGHT_TEAL, max_speed=0.5, stroke_color=Color.SQUID_PINK,stroke_thickness=2)
+        self.gen_players(50)
 
         self.red_green_interval = 4.8
         self.scan_duration_time = 0.7
@@ -58,12 +59,13 @@ class RedLightGreenLight(GameHandler):
 
 
     def restart_game(self):
+        self.players = []
         self.in_game_frame_count = 0
         self.time_left = self.time * 60
         self.is_red_light = False
         self.interval_duration_left = self.red_green_interval * 60
         self.players.clear()
-        self.gen_players(100)
+        self.gen_players(50)
         self.player.set_pos(WIDTH/2, HEIGHT/1.1)
         self.wall_blocks = [
             Block(0,0,WIDTH,self.wall_thickness,Color.SKY_BLUE),
@@ -95,11 +97,17 @@ class RedLightGreenLight(GameHandler):
         self.exit_btn.visible = self.paused
 
     def gen_players(self, num_players):
-        for _ in range(num_players):
+        random_list = [i for i in range(1,num_players+1)]
+        player_index = random.randint(0,num_players-2)
+        np.random.shuffle(random_list)
+        for i in range(num_players):
             x = random.randint(self.player_size+self.wall_thickness*2, WIDTH-self.player_size-self.wall_thickness*2)
             y = random.randint(self.start_y+self.wall_thickness*2, HEIGHT-self.player_size-self.wall_thickness*2)
             color = Color.get_random_color_from_base(Color.SQUID_TEAL)
-            self.players.append(Player(x, y, 7, color, max_speed=0.5, stroke_color=Color.BLACK))
+            if i==player_index:
+                self.player.num_label = random_list[i]
+                self.players.append(self.player)
+            else: self.players.append(Player(x, y, self.player_size, color, max_speed=0.5, stroke_color=Color.BLACK,num_label=random_list[i]))
 
     def toggle_light(self):
         self.is_red_light = not self.is_red_light
@@ -176,12 +184,10 @@ class RedLightGreenLight(GameHandler):
             for player in self.players:
                 player.render(frame)
             
-            self.player.render(frame)
-            
             pg.draw.line(frame, Color.RED, (0, self.start_y), (WIDTH, self.start_y), 5)
             pg.draw.line(frame, Color.RED, (0, self.finish_y), (WIDTH, self.finish_y), 5)
             
-            helper.render_text(frame,f"Time left: {self.time_left // 60}", WIDTH - 100, 20, font_size=20)
+            self.render_timer(10,10,frame,self.time_left)
 
             in_preparation = self.preparation_time*60-self.in_game_frame_count>0
 
@@ -213,7 +219,8 @@ class RedLightGreenLight(GameHandler):
                         if player.pos[1]<=self.finish_y:
                             player.accelerate(0, 0)
                         else:
-                            player.accelerate(random.random()*0.1-0.05,-random.random()*0.1)
+                            if player != self.player:
+                                player.accelerate(random.random()*0.1-0.05,-random.random()*0.1)
                     else:
                         player.accelerate(0, 0)
             if (in_preparation):

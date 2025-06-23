@@ -39,6 +39,8 @@ class HoneyComb(GameHandler):
 
         self.needle_points = []
 
+        self.time_left = time_left*60
+
     def calc_accuracy(self):
         total_points = len(self.needle_points)
         if total_points==0:
@@ -291,7 +293,9 @@ class HoneyComb(GameHandler):
     def mousedown_listener(self,event,mouse_x,mouse_y):
         if event.type==pg.MOUSEMOTION:
             if pg.mouse.get_pressed()[0]:
-                self.scrape_needle(mouse_x,mouse_y)
+                in_preparation = self.preparation_time*60-self.in_game_frame_count>0
+                if not in_preparation:
+                    self.scrape_needle(mouse_x,mouse_y)
         elif event.type==pg.MOUSEBUTTONUP:
             pass
 
@@ -312,6 +316,14 @@ class HoneyComb(GameHandler):
                     self.toggle_game_state(frame, 2)
                 elif accuracy >= 90:
                     self.toggle_game_state(frame, 1)
+
+            self.render_timer(10,10,frame,self.time_left)
+
+            in_preparation = self.preparation_time*60-self.in_game_frame_count>0
+            if (in_preparation):
+                self.render_prep_screen(frame,int((self.preparation_time*60-self.in_game_frame_count)/60)+1)
+            else:
+                self.time_left-=1
 
             # for debug
             # helper.render_text(frame,str(accuracy),100,20,font_size=24,color=Color.BLACK)

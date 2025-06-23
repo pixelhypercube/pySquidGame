@@ -69,7 +69,8 @@ class Marbles(GameHandler):
 
         # boundaries
         self.shoot_y = HEIGHT-100
-        
+
+        self.time_left = time_left*60
 
         self.first_mouse_pos = (None,None)
 
@@ -248,6 +249,8 @@ class Marbles(GameHandler):
                     self.toggle_game_state(frame,3)
                 else:
                     self.toggle_game_state(frame,2)
+
+            self.render_timer(WIDTH-60,10,frame,self.time_left)
             self.marbles_left_marble.render(frame)
             helper.render_text(
                 frame,
@@ -267,6 +270,12 @@ class Marbles(GameHandler):
                 font_size=24,
                 color=Color.BLACK
             )
+
+            in_preparation = self.preparation_time*60-self.in_game_frame_count>0
+            if (in_preparation):
+                self.render_prep_screen(frame,int((self.preparation_time*60-self.in_game_frame_count)/60)+1)
+            else:
+                self.time_left-=1
             self.in_game_frame_count+=1
         else:
             if self.game_state == 1:
@@ -302,15 +311,19 @@ class Marbles(GameHandler):
     def mousedown_listener(self,event,mouse_x,mouse_y):
         if event.type==pg.MOUSEBUTTONDOWN:
             if not self.paused:
-                if mouse_y>=self.shoot_y:
-                    self.first_mouse_pos = (mouse_x,mouse_y)
+                in_preparation = self.preparation_time*60-self.in_game_frame_count>0
+                if not in_preparation:
+                    if mouse_y>=self.shoot_y:
+                        self.first_mouse_pos = (mouse_x,mouse_y)
         if event.type==pg.MOUSEBUTTONUP:
             if not self.paused:
-                first_mouse_x, first_mouse_y = self.first_mouse_pos
-                if first_mouse_x is not None and first_mouse_y is not None:
-                    if self.in_game_frame_count>=self.cooldown_frame and self.marbles_left>0:
-                        self.shoot_marble(mouse_x,mouse_y)
-                        self.cooldown_frame = self.in_game_frame_count + self.cooldown
+                in_preparation = self.preparation_time*60-self.in_game_frame_count>0
+                if not in_preparation:
+                    first_mouse_x, first_mouse_y = self.first_mouse_pos
+                    if first_mouse_x is not None and first_mouse_y is not None:
+                        if self.in_game_frame_count>=self.cooldown_frame and self.marbles_left>0:
+                            self.shoot_marble(mouse_x,mouse_y)
+                            self.cooldown_frame = self.in_game_frame_count + self.cooldown
 
     def aim_marble(self,frame,mouse_x,mouse_y):
         first_mouse_x, first_mouse_y = self.first_mouse_pos

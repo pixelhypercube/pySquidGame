@@ -23,8 +23,7 @@ class Circle:
     def render(self,frame):
         x,y = self.pos
         pg.draw.circle(frame,self.stroke_color,(int(x),int(y)),int(self.r)+self.stroke_thickness)
-        if not self.transparent:
-            pg.draw.circle(frame,self.color,(int(x),int(y)),int(self.r))
+        pg.draw.circle(frame,self.color,(int(x),int(y)),int(self.r))
 
         # update position
         for i in range(len(self.pos)):

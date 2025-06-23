@@ -54,6 +54,8 @@ class TugOfWar(GameHandler):
         self.pull_cooldown = 50
         self.next_pull_cooldown = self.in_game_frame_count + self.pull_cooldown
 
+        self.time_left = time_left*60
+
     def get_mouse_x_speed(self,mouse_x):
         prev_mouse_x = self.prev_mouse_x
         self.prev_mouse_x = mouse_x
@@ -85,13 +87,15 @@ class TugOfWar(GameHandler):
             
             self.rope.render(frame)
 
-            if (self.in_game_frame_count==self.next_pull_cooldown):
-                self.pull_duration_cooldown = self.in_game_frame_count + self.pull_duration
-                self.next_pull_cooldown = self.in_game_frame_count + self.pull_cooldown
+            in_preparation = self.preparation_time*60-self.in_game_frame_count>0
+            if not in_preparation:
+                if (self.in_game_frame_count==self.next_pull_cooldown):
+                    self.pull_duration_cooldown = self.in_game_frame_count + self.pull_duration
+                    self.next_pull_cooldown = self.in_game_frame_count + self.pull_cooldown
 
-            if self.in_game_frame_count<self.pull_duration_cooldown and self.in_game_frame_count>self.pull_duration:
-                force = 0.3*(self.pull_duration_cooldown-self.in_game_frame_count)
-                self.set_balance(self.balance-force)
+                if self.in_game_frame_count<self.pull_duration_cooldown and self.in_game_frame_count>self.pull_duration:
+                    force = 0.3*(self.pull_duration_cooldown-self.in_game_frame_count)
+                    self.set_balance(self.balance-force)
 
             rightmost_left_player = self.players_left[len(self.players_left)-1]
             leftmost_right_player = self.players_right[len(self.players_right)-1]
@@ -102,6 +106,12 @@ class TugOfWar(GameHandler):
             elif leftmost_right_player.pos[0]<fall_right:
                 self.toggle_game_state(frame,2)
 
+            self.render_timer(10,10,frame,self.time_left)
+
+            if (in_preparation):
+                self.render_prep_screen(frame,int((self.preparation_time*60-self.in_game_frame_count)/60)+1)
+            else:
+                self.time_left-=1
             self.in_game_frame_count += 1
         else:
             if self.game_state == 1:

@@ -46,6 +46,8 @@ class GlassSteppingStones(GameHandler):
 
         self.game_state = -1
 
+        self.time_left = time_left*60
+
         self.cooldown = 50
         self.next_cooldown = self.in_game_frame_count + self.cooldown
         self.current_player = 0
@@ -137,16 +139,24 @@ class GlassSteppingStones(GameHandler):
             helper.render_text(frame,str(self.current_player),50,20)
             if 0 <= self.current_player < len(self.players):
                 self.render_dialog(frame,(WIDTH//2-100,20),(200,100),self.current_player,font_size=20)
+            in_preparation = self.preparation_time*60-self.in_game_frame_count>0
 
-            if self.in_game_frame_count==self.next_cooldown:
-                if self.current_player<len(self.players):
-                    player = self.players[self.current_player]
-                    if getattr(player,'step_index',0) < len(self.correct_path):
-                        self.comp_next_step()
-                    else:
-                        self.current_player+=1
-                self.next_cooldown = self.in_game_frame_count + self.cooldown
+            if not in_preparation:
+                if self.in_game_frame_count==self.next_cooldown:
+                    if self.current_player<len(self.players):
+                        player = self.players[self.current_player]
+                        if getattr(player,'step_index',0) < len(self.correct_path):
+                            self.comp_next_step()
+                        else:
+                            self.current_player+=1
+                    self.next_cooldown = self.in_game_frame_count + self.cooldown
 
+            self.render_timer(10,10,frame,self.time_left)
+
+            if (in_preparation):
+                self.render_prep_screen(frame,int((self.preparation_time*60-self.in_game_frame_count)/60)+1)
+            else:
+                self.time_left-=1
             self.in_game_frame_count += 1
         else:
             if self.game_state == 1:
