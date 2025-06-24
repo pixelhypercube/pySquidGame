@@ -16,9 +16,9 @@ import numpy as np
 helper = Helper()
 
 class GlassSteppingStones(GameHandler):
-    def __init__(self, time=60, preparation_time=5, bg_color=Color.BLACK,start_y=HEIGHT-100,finish_y=100,time_left=60,player_size=10,wall_thickness=10):
+    def __init__(self, time=300, preparation_time=5, bg_color=Color.BLACK,start_y=HEIGHT-100,finish_y=100,time_left=120,player_size=10,wall_thickness=10):
         super().__init__(time, preparation_time, bg_color)
-        self.help_start_btn = Button(WIDTH/2,HEIGHT/1.33,60,20,content="Start")
+        self.help_start_btn = Button(WIDTH/2,HEIGHT/1.1,60,20,content="Start")
         self.help_back_btn = Button(80, HEIGHT / 10, 50, 25, content="Back", next_screen="levels")
         self.restart_btn = Button(WIDTH/2,HEIGHT/2,100,25,content="Restart Game",visible=self.paused,function=lambda:self.restart_game())
         self.exit_btn = Button(WIDTH/2,HEIGHT/2+75,100,25,content="Exit Game",next_screen="levels",visible=self.paused)
@@ -27,7 +27,7 @@ class GlassSteppingStones(GameHandler):
             self.help_start_btn,self.help_back_btn,self.restart_btn,self.exit_btn,self.return_lvls_btn
         ]
 
-        self.player = Player(0,0,8,Color.SQUID_LIGHT_TEAL,stroke_color=Color.SQUID_PURPLE2,stroke_thickness=2,num_label=str(random.randint(1,500)))
+        self.player = Player(0,0,8,Color.SQUID_LIGHT_TEAL,stroke_color=Color.SQUID_PURPLE2,stroke_thickness=2)
 
         self.players = []
 
@@ -55,16 +55,20 @@ class GlassSteppingStones(GameHandler):
 
     def set_players(self,r=8,players_count=16):
         player_index = random.randint(0,players_count-1)
-        self.player.num_label = player_index
+        distinct_nums = random.sample(range(1,501),players_count)
+        self.player.num_label = distinct_nums[player_index]
         for i in range(players_count):
             if i==player_index:
                 self.player.set_pos(80-(i%5)*(r+1)*2,(r+1)*2*(i//5)+HEIGHT//2.25)
                 self.players.append(self.player)
             else:
-                self.players.append(Player(80-(i%5)*(r+1)*2,(r+1)*2*(i//5)+HEIGHT//2.25,r,Color.SQUID_TEAL,num_label=random.randint(1,500)))
+                self.players.append(Player(80-(i%5)*(r+1)*2,(r+1)*2*(i//5)+HEIGHT//2.25,r,Color.SQUID_TEAL,num_label=distinct_nums[i]))
 
     def restart_game(self):
         self.in_game_frame_count = 0
+
+        self.time_left = self.time * 60
+        self.preparation_time = 5
         self.game_state = -1
         self.correct_path = [1 for _ in range(9)] + [0 for _ in range(9)]
         np.random.shuffle(self.correct_path)
@@ -101,9 +105,13 @@ class GlassSteppingStones(GameHandler):
         pg.draw.rect(frame,color,(*pos,*dim))
         pg.draw.rect(frame,stroke_color,(*pos,*dim),width=stroke_thickness)
 
-        helper.render_text(frame,f"Player {self.players[player_index].num_label}'s Turn!",int(x)+w//2,y+30,font_size=font_size)
-        pg.draw.circle(frame,Color.BLACK,(int(x)+w//2,h-30+y),14)
-        pg.draw.circle(frame,Color.SQUID_TEAL,(int(x)+w//2,h-30+y),12)
+        player = self.players[player_index]
+
+        helper.render_text(frame,f"Player {player.num_label}'s Turn!",int(x)+w//2,y+30,font_size=font_size)
+        pg.draw.circle(frame,player.stroke_color,(int(x)+w//2,h-30+y),14)
+        pg.draw.circle(frame,player.color,(int(x)+w//2,h-30+y),12)
+        if player == self.player:
+            helper.render_text(frame,f"(Your Turn!)",int(x)+w//2,y+50,font_size=font_size//1.5)
         helper.render_text(frame,str(self.players[player_index].num_label),int(x)+w//2,h-30+y,font_size=12)
 
     def render(self,frame,mouse_x,mouse_y):
@@ -155,8 +163,14 @@ class GlassSteppingStones(GameHandler):
 
             if (in_preparation):
                 self.render_prep_screen(frame,int((self.preparation_time*60-self.in_game_frame_count)/60)+1)
+            elif self.preparation_time*60-self.in_game_frame_count==0:
+                self.next_cooldown = self.in_game_frame_count + self.cooldown
             else:
                 self.time_left-=1
+
+            # game over:
+            if self.time_left<=0:
+                self.toggle_game_state(frame,2)
             self.in_game_frame_count += 1
         else:
             if self.game_state == 1:
@@ -234,11 +248,13 @@ class GlassSteppingStones(GameHandler):
         if key == pg.K_ESCAPE or key == pg.K_p:
             if self.game_state == 0:
                 self.toggle_paused()
-        elif key==pg.K_0:
-            if not self.paused:
+        elif key==pg.K_UP:
+            in_preparation = self.preparation_time*60-self.in_game_frame_count>0
+            if not self.paused and not in_preparation:
                 self.player_next_step(0)
-        elif key==pg.K_1:
-            if not self.paused:
+        elif key==pg.K_DOWN:
+            in_preparation = self.preparation_time*60-self.in_game_frame_count>0
+            if not self.paused and not in_preparation:
                 self.player_next_step(1)
 
     def toggle_paused(self):
@@ -256,7 +272,19 @@ class GlassSteppingStones(GameHandler):
         pass
 
     def mousedown_listener(self,event,mouse_x,mouse_y):
-        pass
+        if event.type == pg.MOUSEBUTTONDOWN:
+            in_preparation = self.preparation_time*60-self.in_game_frame_count>0
+            if not self.paused and not in_preparation:
+                if not hasattr(self.player,"step_index"):
+                    self.player.step_index = 0
+                step_index = self.player.step_index
+                if step_index<len(self.glass_blocks_left):
+                    left_block = self.glass_blocks_left[step_index]
+                    right_block = self.glass_blocks_right[step_index]
+                    if left_block.contains(mouse_x,mouse_y):
+                        self.player_next_step(0)
+                    elif right_block.contains(mouse_x,mouse_y):
+                        self.player_next_step(1)
 
     def toggle_game_state(self,frame,state):
         self.game_state = state
@@ -279,14 +307,23 @@ class GlassSteppingStones(GameHandler):
 
     def render_help(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
-        helper.render_text(frame, "HoneyComb", WIDTH//2, 50, color=Color.WHITE, font_size=30)
-        helper.render_text(frame, "Instructions:", WIDTH//2, 100, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "1. Choose a shape to cut out.", WIDTH//2, 150, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "2. Use the mouse to cut along the lines.", WIDTH//2, 200, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "3. Avoid breaking the shape.", WIDTH//2, 250, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "4. Complete the shape within the time limit.", WIDTH//2, 300, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "5. If you break the shape, you lose.", WIDTH//2, 350, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "6. Good luck!", WIDTH//2, 400, color=Color.WHITE, font_size=20)
+        helper.render_text(frame,"How to play: Glass Stepping Stones",WIDTH/2,HEIGHT/12,font_size=30)
+        helper.render_text(
+            frame, "Objective: Reach the end by stepping only on tempered glass panels.",
+            WIDTH // 2, HEIGHT // 6, font_size=22, color=Color.WHITE
+        )
+        helper.render_image(
+            frame, "./assets/img/glasssteppingstones/demo.png",
+            WIDTH // 2, HEIGHT // 2.1, [int(500 / 2.25), int(375 / 2.25)]
+        )
+        helper.render_text(
+            frame, "Use arrow keys (up arrow for top glass and down arrow for bottom glass)\n or click to jump from one panel to the next.",
+            WIDTH // 2, HEIGHT // 1.26, font_size=20, color=Color.WHITE
+        )
+        helper.render_text(
+            frame, "Remember: Only one panel in each pair is safe.",
+            WIDTH // 2, HEIGHT // 1.18, font_size=20, color=Color.WHITE
+        )
 
         self.help_start_btn.render(frame)
         self.help_back_btn.render(frame)
@@ -304,20 +341,6 @@ class GlassSteppingStones(GameHandler):
         helper.render_text(frame,"Thanks a lot for playing! Since this program is in beta,",WIDTH/2,HEIGHT/2.4,font_size=20)
         helper.render_text(frame,"there are 4 games are currently in progress!",WIDTH/2,HEIGHT/2.1,font_size=20)
         self.return_lvls_btn.render(frame)
-    def render_help(self,frame):
-        pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
-        helper.render_text(frame, "HoneyComb", WIDTH//2, 50, color=Color.WHITE, font_size=30)
-        helper.render_text(frame, "Instructions:", WIDTH//2, 100, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "1. Choose a shape to cut out.", WIDTH//2, 150, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "2. Use the mouse to cut along the lines.", WIDTH//2, 200, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "3. Avoid breaking the shape.", WIDTH//2, 250, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "4. Complete the shape within the time limit.", WIDTH//2, 300, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "5. If you break the shape, you lose.", WIDTH//2, 350, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "6. Good luck!", WIDTH//2, 400, color=Color.WHITE, font_size=20)
-
-        self.help_start_btn.render(frame)
-        self.help_back_btn.render(frame)
-        self.help_start_btn.function = lambda: self.toggle_game_state(frame,0) 
     def render_paused(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
         helper.render_text(frame,"Paused",WIDTH/2,HEIGHT/3,font_size=40)

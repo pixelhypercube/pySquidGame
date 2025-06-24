@@ -15,9 +15,9 @@ from objects.Dalgona import Dalgona
 helper = Helper()
 
 class HoneyComb(GameHandler):
-    def __init__(self, time=60, preparation_time=5, bg_color=Color.SAND,time_left=60,dalgona_size=150):
+    def __init__(self, time=60, preparation_time=5, bg_color=Color.SAND,time_left=120,dalgona_size=150):
         super().__init__(time, preparation_time, bg_color)
-        self.help_start_btn = Button(WIDTH/2,HEIGHT/1.33,60,20,content="Start")
+        self.help_start_btn = Button(WIDTH/2,HEIGHT/1.1,60,20,content="Start")
         self.help_back_btn = Button(80, HEIGHT / 10, 50, 25, content="Back", next_screen="levels")
         self.restart_btn = Button(WIDTH/2,HEIGHT/2,100,25,content="Restart Game",visible=self.paused,function=lambda:self.restart_game())
         self.exit_btn = Button(WIDTH/2,HEIGHT/2+75,100,25,content="Exit Game",next_screen="levels",visible=self.paused)
@@ -206,6 +206,10 @@ class HoneyComb(GameHandler):
         self.game_state = -1
         self.dalgona.reset()
 
+        self.in_game_frame_count = 0
+        self.time_left = self.time * 60
+        self.preparation_time = 5
+
         self.needle_points = []
 
         self.help_back_btn.visible = True
@@ -325,6 +329,11 @@ class HoneyComb(GameHandler):
             else:
                 self.time_left-=1
 
+            # game over:
+            if self.time_left<=0:
+                self.toggle_game_state(frame,2)
+
+            self.in_game_frame_count+=1
             # for debug
             # helper.render_text(frame,str(accuracy),100,20,font_size=24,color=Color.BLACK)
         else:
@@ -351,14 +360,23 @@ class HoneyComb(GameHandler):
         self.return_lvls_btn.render(frame)
     def render_help(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
-        helper.render_text(frame, "HoneyComb", WIDTH//2, 50, color=Color.WHITE, font_size=30)
-        helper.render_text(frame, "Instructions:", WIDTH//2, 100, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "1. Choose a shape to cut out.", WIDTH//2, 150, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "2. Use the mouse to cut along the lines.", WIDTH//2, 200, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "3. Avoid breaking the shape.", WIDTH//2, 250, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "4. Complete the shape within the time limit.", WIDTH//2, 300, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "5. If you break the shape, you lose.", WIDTH//2, 350, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "6. Good luck!", WIDTH//2, 400, color=Color.WHITE, font_size=20)
+        helper.render_text(frame, "How to play: Honeycomb", WIDTH // 2, 50, color=Color.WHITE, font_size=30)
+        helper.render_text(
+            frame, "Objective: Carve out the shape without breaking the honeycomb!",
+            WIDTH // 2, HEIGHT // 6, font_size=22, color=Color.WHITE
+        )
+        helper.render_image(
+            frame, "./assets/img/honeycomb/demo.png",
+            WIDTH // 2, HEIGHT // 2.1, [int(500 / 2.25), int(375 / 2.25)]
+        )
+        helper.render_text(
+            frame, "Click and drag slowly along the outline of the shape.",
+            WIDTH // 2, HEIGHT // 1.29, font_size=20, color=Color.WHITE
+        )
+        helper.render_text(
+            frame, "Going too fast or straying off will crack the candy!",
+            WIDTH // 2, HEIGHT // 1.22, font_size=20, color=Color.WHITE
+        )
 
         self.help_start_btn.render(frame)
         self.help_back_btn.render(frame)

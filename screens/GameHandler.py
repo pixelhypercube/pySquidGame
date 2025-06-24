@@ -50,10 +50,23 @@ class GameHandler:
             color = on_color if name in active else off_color
             pg.draw.polygon(frame, color, scaled_points)
 
-    def render_timer(self,x,y,frame,time_left):
-        pg.draw.rect(frame,Color.SQUID_GREY,(x,y,55,50))
-        for i, d in enumerate(str(time_left//60)):
-            self.render_seven_seg_num(frame, x + i * 25+5, y+5, d)
+    def render_timer(self,x,y,frame,time_left,on_color=Color.SQUID_PINK,off_color=Color.DARK_GREY,font_size=20):
+        time_seconds = (time_left//60)%60
+        time_minutes = math.floor(time_left//3600)
+        time_disp = f"{("0" if time_minutes<10 else "") + str(time_minutes)}:{("0" if time_seconds<10 else "") + str(time_seconds)}"
+        
+        char_spacing = font_size+5
+        total_width = len(time_disp)*char_spacing+7
+        box_height = font_size*2+7
+
+        pg.draw.rect(frame, Color.SQUID_GREY, (x, y, total_width, box_height))
+        pg.draw.rect(frame, on_color, (x, y, total_width, box_height),width=2)
+        for i, d in enumerate(time_disp):
+            if d!=":":
+                self.render_seven_seg_num(frame, x + i * 25+5, y+5, d,on_color=on_color,off_color=off_color,font_size=font_size)
+            else:
+                pg.draw.rect(frame,on_color,(x+i*25+font_size//2+3,y+10,font_size//3,font_size//3))
+                pg.draw.rect(frame,on_color,(x+i*25+font_size//2+3,y+30,font_size//3,font_size//3))
     def handle_buttons(self,event,mouse_x,mouse_y,current_screen):
         next_screen = current_screen
         for btn in self.buttons:

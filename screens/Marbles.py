@@ -35,7 +35,7 @@ class Marbles(GameHandler):
         ]
 
         self.marbles_left = 10
-        self.marbles_left_marble = Marble(20,20,8,Color.SQUID_TEAL) # for display purposes
+        self.marbles_left_marble = Marble(WIDTH-70,20,8,Color.SQUID_TEAL) # for display purposes
 
         # cooldown
         self.cooldown = 100
@@ -48,13 +48,6 @@ class Marbles(GameHandler):
 
         self.marble_size = 4
         self.marbles = []
-        # self.marbles = [
-        #     Marble(
-        #         random.randint(self.marble_size,WIDTH-self.marble_size),
-        #         random.randint(self.marble_size,HEIGHT-self.marble_size)
-        #         ,self.marble_size,Color.SQUID_TEAL,max_speed=1) for _ in range(10)
-        # ]
-
         self.hole = RadialForceArea(WIDTH//2-50,HEIGHT//2-260,100,100,stroke_thickness=3,force_strength=0.25)
         self.force_areas = [
             self.hole
@@ -137,6 +130,10 @@ class Marbles(GameHandler):
         self.marbles_left = 10
         self.player_marbles_in = 0
         self.computer_marbles_in = 0
+
+        self.in_game_frame_count = 0
+        self.time_left = self.time * 60
+        self.preparation_time = 5
 
         self.marbles = []
 
@@ -242,7 +239,7 @@ class Marbles(GameHandler):
                 self.marbles_left>0:
                 self.aim_marble(frame,mouse_x,mouse_y)
 
-            if self.marbles_left<=0 and marble_max_vel<=0.05 and self.in_game_frame_count>self.cooldown_frame:
+            if self.marbles_left<=0 and marble_max_vel<=0.1 and self.in_game_frame_count>self.cooldown_frame:
                 if player_marbles_in>computer_marbles_in:
                     self.toggle_game_state(frame,1)
                 elif player_marbles_in==computer_marbles_in:
@@ -250,12 +247,12 @@ class Marbles(GameHandler):
                 else:
                     self.toggle_game_state(frame,2)
 
-            self.render_timer(WIDTH-60,10,frame,self.time_left)
+            self.render_timer(10,10,frame,self.time_left)
             self.marbles_left_marble.render(frame)
             helper.render_text(
                 frame,
                 f" x {self.marbles_left}",
-                50,
+                WIDTH-35,
                 20,
                 font_size=20,
                 color=Color.BLACK
@@ -276,6 +273,10 @@ class Marbles(GameHandler):
                 self.render_prep_screen(frame,int((self.preparation_time*60-self.in_game_frame_count)/60)+1)
             else:
                 self.time_left-=1
+            
+            # game over:
+            if self.time_left<=0:
+                self.toggle_game_state(frame,2)
             self.in_game_frame_count+=1
         else:
             if self.game_state == 1:

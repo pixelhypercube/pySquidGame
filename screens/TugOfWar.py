@@ -17,7 +17,7 @@ helper = Helper()
 class TugOfWar(GameHandler):
     def __init__(self, time=60, preparation_time=5, bg_color=Color.BLACK,start_y=HEIGHT-100,finish_y=100,time_left=60,player_size=10,wall_thickness=10):
         super().__init__(time, preparation_time, bg_color)
-        self.help_start_btn = Button(WIDTH/2,HEIGHT/1.33,60,20,content="Start")
+        self.help_start_btn = Button(WIDTH/2,HEIGHT/1.1,60,20,content="Start")
         self.help_back_btn = Button(80, HEIGHT / 10, 50, 25, content="Back", next_screen="levels")
         self.restart_btn = Button(WIDTH/2,HEIGHT/2,100,25,content="Restart Game",visible=self.paused,function=lambda:self.restart_game())
         self.exit_btn = Button(WIDTH/2,HEIGHT/2+75,100,25,content="Exit Game",next_screen="levels",visible=self.paused)
@@ -32,12 +32,14 @@ class TugOfWar(GameHandler):
         self.platform_left = Block(0,HEIGHT//2,WIDTH//2-75,20,Color.YELLOW)
         self.platform_right = Block(WIDTH//2+75,HEIGHT//2,WIDTH//2-75,20,Color.YELLOW)
 
+        distinct_nums = random.sample(range(1,501),self.player_size*2)
+
         self.players_left = [
-            Player(50+i*self.player_size*2,HEIGHT//2-self.player_size,self.player_size,Color.SQUID_TEAL,num_label=random.randint(1,500)) for i in range(self.num_players)
+            Player(50+i*self.player_size*2,HEIGHT//2-self.player_size,self.player_size,Color.SQUID_TEAL,num_label=distinct_nums[i]) for i in range(self.num_players)
         ]
 
         self.players_right = [
-            Player(WIDTH-50-i*self.player_size*2,HEIGHT//2-self.player_size,self.player_size,Color.SQUID_TEAL,num_label=random.randint(1,500)) for i in range(self.num_players)
+            Player(WIDTH-50-i*self.player_size*2,HEIGHT//2-self.player_size,self.player_size,Color.SQUID_TEAL,num_label=distinct_nums[i+self.player_size]) for i in range(self.num_players)
         ]
 
         self.rope = Block(50,HEIGHT//2-2*self.player_size+2,700,2,Color.SAND)
@@ -80,7 +82,8 @@ class TugOfWar(GameHandler):
             self.platform_left.render(frame)
             self.platform_right.render(frame)
             
-            self.set_balance(self.balance+self.mouse_x_speed//10)
+            if self.mouse_x_speed is not None:
+                self.set_balance(self.balance+self.mouse_x_speed//10)
 
             for player in self.players_left+self.players_right:
                 player.render(frame)
@@ -112,6 +115,10 @@ class TugOfWar(GameHandler):
                 self.render_prep_screen(frame,int((self.preparation_time*60-self.in_game_frame_count)/60)+1)
             else:
                 self.time_left-=1
+            
+            # game over:
+            if self.time_left<=0:
+                self.toggle_game_state(frame,2)
             self.in_game_frame_count += 1
         else:
             if self.game_state == 1:
@@ -144,18 +151,26 @@ class TugOfWar(GameHandler):
 
     def mousedown_listener(self,event,mouse_x,mouse_y):
         if event.type == pg.MOUSEBUTTONDOWN:
-            self.prev_mouse_x = mouse_x
+            in_preparation = self.preparation_time*60-self.in_game_frame_count>0
+            if not in_preparation:
+                self.prev_mouse_x = mouse_x
         if event.type == pg.MOUSEMOTION:
-            if not self.paused and pg.mouse.get_pressed()[0]:
-                self.mouse_x_speed = self.get_mouse_x_speed(mouse_x)
-            else:
-                self.mouse_x_speed = 0
+            in_preparation = self.preparation_time*60-self.in_game_frame_count>0
+            if not in_preparation:
+                if not self.paused and pg.mouse.get_pressed()[0]:
+                    self.mouse_x_speed = self.get_mouse_x_speed(mouse_x)
+                else:
+                    self.mouse_x_speed = 0
     
     def mouseup_listener(self,event,mouse_x,mouse_y):
         pass
 
     def restart_game(self):
         self.in_game_frame_count = 0
+
+        self.time_left = self.time * 60
+        self.preparation_time = 5
+
         self.pull_duration = 20
         self.pull_duration_cooldown = self.in_game_frame_count + self.pull_duration
         self.pull_cooldown = 50
@@ -205,14 +220,23 @@ class TugOfWar(GameHandler):
 
     def render_help(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
-        helper.render_text(frame, "HoneyComb", WIDTH//2, 50, color=Color.WHITE, font_size=30)
-        helper.render_text(frame, "Instructions:", WIDTH//2, 100, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "1. Choose a shape to cut out.", WIDTH//2, 150, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "2. Use the mouse to cut along the lines.", WIDTH//2, 200, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "3. Avoid breaking the shape.", WIDTH//2, 250, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "4. Complete the shape within the time limit.", WIDTH//2, 300, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "5. If you break the shape, you lose.", WIDTH//2, 350, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "6. Good luck!", WIDTH//2, 400, color=Color.WHITE, font_size=20)
+        helper.render_text(frame,"How to play: Tug Of War",WIDTH/2,HEIGHT/12,font_size=40)
+        helper.render_text(
+            frame, "Objective: Pull the opposing team off the platform!",
+            WIDTH // 2, HEIGHT // 6, font_size=22, color=Color.WHITE
+        )
+        helper.render_image(
+            frame, "./assets/img/tugofwar/demo.png",
+            WIDTH // 2, HEIGHT // 2.1, [int(500 / 2.25), int(375 / 2.25)]
+        )
+        helper.render_text(
+            frame, "Drag your mouse rightwards to pull your side of the team!",
+            WIDTH // 2, HEIGHT // 1.29, font_size=20, color=Color.WHITE
+        )
+        helper.render_text(
+            frame, "Keep your rhythm steady or you'll lose grip.",
+            WIDTH // 2, HEIGHT // 1.22, font_size=20, color=Color.WHITE
+        )
 
         self.help_start_btn.render(frame)
         self.help_back_btn.render(frame)
@@ -230,20 +254,6 @@ class TugOfWar(GameHandler):
         helper.render_text(frame,"Thanks a lot for playing! Since this program is in beta,",WIDTH/2,HEIGHT/2.4,font_size=20)
         helper.render_text(frame,"there are 4 games are currently in progress!",WIDTH/2,HEIGHT/2.1,font_size=20)
         self.return_lvls_btn.render(frame)
-    def render_help(self,frame):
-        pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
-        helper.render_text(frame, "HoneyComb", WIDTH//2, 50, color=Color.WHITE, font_size=30)
-        helper.render_text(frame, "Instructions:", WIDTH//2, 100, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "1. Choose a shape to cut out.", WIDTH//2, 150, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "2. Use the mouse to cut along the lines.", WIDTH//2, 200, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "3. Avoid breaking the shape.", WIDTH//2, 250, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "4. Complete the shape within the time limit.", WIDTH//2, 300, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "5. If you break the shape, you lose.", WIDTH//2, 350, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "6. Good luck!", WIDTH//2, 400, color=Color.WHITE, font_size=20)
-
-        self.help_start_btn.render(frame)
-        self.help_back_btn.render(frame)
-        self.help_start_btn.function = lambda: self.toggle_game_state(frame,0) 
     def render_paused(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
         helper.render_text(frame,"Paused",WIDTH/2,HEIGHT/3,font_size=40)

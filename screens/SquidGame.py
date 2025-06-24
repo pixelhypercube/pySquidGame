@@ -15,9 +15,9 @@ from components.Button import Button
 helper = Helper()
 
 class SquidGame(GameHandler):
-    def __init__(self, time=60, preparation_time=5, bg_color=Color.STONE,start_y=HEIGHT-100,finish_y=100,time_left=60,player_size=10,wall_thickness=10):
+    def __init__(self, time=60, preparation_time=5, bg_color=Color.STONE,start_y=HEIGHT-100,finish_y=100,time_left=90,player_size=10,wall_thickness=10):
         super().__init__(time, preparation_time, bg_color)
-        self.help_start_btn = Button(WIDTH/2,HEIGHT/1.33,60,20,content="Start")
+        self.help_start_btn = Button(WIDTH/2,HEIGHT/1.1,60,20,content="Start")
         self.help_back_btn = Button(80, HEIGHT / 10, 50, 25, content="Back", next_screen="levels")
         self.restart_btn = Button(WIDTH/2,HEIGHT/2,100,25,content="Restart Game",visible=self.paused,function=lambda:self.restart_game())
         self.exit_btn = Button(WIDTH/2,HEIGHT/2+75,100,25,content="Exit Game",next_screen="levels",visible=self.paused)
@@ -26,13 +26,15 @@ class SquidGame(GameHandler):
             self.help_start_btn,self.help_back_btn,self.restart_btn,self.exit_btn,self.return_lvls_btn
         ]
 
-        self.player_1 = Player(90,HEIGHT//2,10,Color.BLACK,max_speed=5,friction=0.15,num_label=random.randint(0,500))
+        distinct_nums = random.sample(range(0,501),2)
+
+        self.player_1 = Player(90,HEIGHT//2,10,Color.BLACK,max_speed=5,friction=0.15,num_label=distinct_nums[0])
         self.player_1.is_hopping = True
         self.player_1.perm_hopping_disabled = False
         self.player_1.crossed_areas = []
         self.player_1.area = None
         self.player_1.last_area = "A" # prev state area
-        self.player_2 = Player(WIDTH//2,HEIGHT//2,10,Color.BLACK,max_speed=5,friction=0.15,num_label=random.randint(0,500))
+        self.player_2 = Player(WIDTH//2,HEIGHT//2,10,Color.BLACK,max_speed=5,friction=0.15,num_label=distinct_nums[1])
         self.player_2.is_hopping = False
         self.player_2.crossed_areas = []
         self.player_2.area = None
@@ -44,7 +46,7 @@ class SquidGame(GameHandler):
 
         self.hopping_cooldown = 25
         self.next_hopping_cooldown = self.in_game_frame_count + self.hopping_cooldown
-        self.attack_cooldown = 10
+        self.attack_cooldown = 3
         self.next_attack_cooldown = self.in_game_frame_count + self.attack_cooldown
 
         self.keys_held = {
@@ -293,6 +295,10 @@ class SquidGame(GameHandler):
                 self.render_prep_screen(frame,int((self.preparation_time*60-self.in_game_frame_count)/60)+1)
             else:
                 self.time_left-=1
+
+            # game over:
+            if self.time_left<=0:
+                self.toggle_game_state(frame,2)
             self.in_game_frame_count += 1
         else:
             if self.game_state == 1:
@@ -338,13 +344,18 @@ class SquidGame(GameHandler):
         self.in_game_frame_count = 0
         self.game_state = -1
 
-        self.player_1 = Player(90,HEIGHT//2,10,Color.BLACK,max_speed=5,friction=0.15,num_label=random.randint(0,500))
+        self.time_left = self.time * 60
+        self.preparation_time = 5
+
+        distinct_nums = random.sample(range(0,501),2)
+
+        self.player_1 = Player(90,HEIGHT//2,10,Color.BLACK,max_speed=5,friction=0.15,num_label=distinct_nums[0])
         self.player_1.is_hopping = True
         self.player_1.perm_hopping_disabled = False
         self.player_1.crossed_areas = []
         self.player_1.area = None
         self.player_1.last_area = "A"
-        self.player_2 = Player(WIDTH//2,HEIGHT//2,10,Color.BLACK,max_speed=5,friction=0.15,num_label=random.randint(0,500))
+        self.player_2 = Player(WIDTH//2,HEIGHT//2,10,Color.BLACK,max_speed=5,friction=0.15,num_label=distinct_nums[1])
         self.player_2.is_hopping = False
         self.player_2.crossed_areas = []
         self.player_2.area = None
@@ -383,14 +394,23 @@ class SquidGame(GameHandler):
 
     def render_help(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
-        helper.render_text(frame, "HoneyComb", WIDTH//2, 50, color=Color.WHITE, font_size=30)
-        helper.render_text(frame, "Instructions:", WIDTH//2, 100, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "1. Choose a shape to cut out.", WIDTH//2, 150, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "2. Use the mouse to cut along the lines.", WIDTH//2, 200, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "3. Avoid breaking the shape.", WIDTH//2, 250, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "4. Complete the shape within the time limit.", WIDTH//2, 300, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "5. If you break the shape, you lose.", WIDTH//2, 350, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "6. Good luck!", WIDTH//2, 400, color=Color.WHITE, font_size=20)
+        helper.render_text(frame, "How to play: Squid Game (Final Game)", WIDTH // 2, 50, color=Color.WHITE, font_size=28)
+        helper.render_text(
+            frame, "Objective: Push the opponent out of the squid or reach the head!",
+            WIDTH // 2, HEIGHT // 6, font_size=22, color=Color.WHITE
+        )
+        helper.render_image(
+            frame, "./assets/img/squidgame/demo.png",
+            WIDTH // 2, HEIGHT // 2.1, [int(500 / 2.25), int(375 / 2.25)]
+        )
+        helper.render_text(
+            frame, "Use WASD (Player 1) to move.",
+            WIDTH // 2, HEIGHT // 1.29, font_size=20, color=Color.WHITE
+        )
+        helper.render_text(
+            frame, "Block or push your opponent while staying in bounds.",
+            WIDTH // 2, HEIGHT // 1.22, font_size=20, color=Color.WHITE
+        )
 
         self.help_start_btn.render(frame)
         self.help_back_btn.render(frame)
@@ -408,20 +428,6 @@ class SquidGame(GameHandler):
         helper.render_text(frame,"Thanks a lot for playing! Since this program is in beta,",WIDTH/2,HEIGHT/2.4,font_size=20)
         helper.render_text(frame,"there are 4 games are currently in progress!",WIDTH/2,HEIGHT/2.1,font_size=20)
         self.return_lvls_btn.render(frame)
-    def render_help(self,frame):
-        pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
-        helper.render_text(frame, "HoneyComb", WIDTH//2, 50, color=Color.WHITE, font_size=30)
-        helper.render_text(frame, "Instructions:", WIDTH//2, 100, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "1. Choose a shape to cut out.", WIDTH//2, 150, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "2. Use the mouse to cut along the lines.", WIDTH//2, 200, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "3. Avoid breaking the shape.", WIDTH//2, 250, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "4. Complete the shape within the time limit.", WIDTH//2, 300, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "5. If you break the shape, you lose.", WIDTH//2, 350, color=Color.WHITE, font_size=20)
-        helper.render_text(frame, "6. Good luck!", WIDTH//2, 400, color=Color.WHITE, font_size=20)
-
-        self.help_start_btn.render(frame)
-        self.help_back_btn.render(frame)
-        self.help_start_btn.function = lambda: self.toggle_game_state(frame,0) 
     def render_paused(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
         helper.render_text(frame,"Paused",WIDTH/2,HEIGHT/3,font_size=40)

@@ -62,6 +62,7 @@ class RedLightGreenLight(GameHandler):
         self.players = []
         self.in_game_frame_count = 0
         self.time_left = self.time * 60
+        self.preparation_time = 5
         self.is_red_light = False
         self.interval_duration_left = self.red_green_interval * 60
         self.players.clear()
@@ -255,6 +256,10 @@ class RedLightGreenLight(GameHandler):
 
                 if self.is_red_light:
                     self.cooldown_time += 1
+
+                # game over:
+                if self.time_left<=0:
+                    self.toggle_game_state(frame,2)
 
             self.in_game_frame_count += 1
         else:
