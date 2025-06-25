@@ -14,19 +14,17 @@ class Dalgona(Circle):
     def draw_star(self, frame, x, y):
         points = []
         num_points = 5
-        outer_radius = self.r * 0.5
-        inner_radius = self.r * 0.2
+        outer_radius = self.r//2
+        inner_radius = self.r//5
 
-        for i in range(num_points * 2):
-            angle = i * math.pi / num_points
-            radius = outer_radius if i % 2 == 0 else inner_radius
-            px = x + radius * math.cos(angle - math.pi / 2)
-            py = y + radius * math.sin(angle - math.pi / 2)
-            points.append((px, py))
-
-        # pg.draw.polygon(frame, self.color, points,width=self.stroke_thickness)
-        if self.stroke_thickness > 0:
-            pg.draw.polygon(frame, self.stroke_color, points, self.stroke_thickness)
+        for i in range(num_points*2):
+            angle = i*math.pi/num_points
+            dist = outer_radius if i%2==0 else inner_radius
+            px = x+math.cos(angle-math.pi/2)*dist
+            py = y+math.sin(angle-math.pi/2)*dist
+            points.append((px,py))
+        pg.draw.polygon(frame,self.stroke_color,points,width=self.stroke_thickness//2)
+        
 
     def draw_square(self, frame, x, y):
         pg.draw.rect(frame,self.stroke_color,pg.Rect(x-self.r//2,y-self.r//2,self.r,self.r),width=self.stroke_thickness//2)

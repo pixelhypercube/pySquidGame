@@ -130,6 +130,7 @@ class Marbles(GameHandler):
         self.marbles_left = 10
         self.player_marbles_in = 0
         self.computer_marbles_in = 0
+        self.cooldown_frame = -1
 
         self.in_game_frame_count = 0
         self.time_left = self.time * 60
@@ -200,8 +201,19 @@ class Marbles(GameHandler):
 
                 nearest_marble = marble.detect_nearest_circle(self.marbles)
                 if nearest_marble is not None:
-                    if marble.detect_circle_contact(nearest_marble.pos):
+                    is_contact = marble.detect_circle_contact(nearest_marble.pos)
+                    pair_id = id(nearest_marble)
+
+                    if is_contact:
+                        if pair_id not in marble.colliding_with:
+                            vx,vy = marble.vel
+                            mag = math.hypot(vx,vy)*0.1
+
+                            helper.play_sound("./assets/sounds/marbleCollide.wav",volume=min(mag,1))
+                            marble.colliding_with.add(pair_id)
                         marble.contact_circle(nearest_marble)
+                    else:
+                        marble.colliding_with.discard(pair_id)
 
                 adj_force_area = marble.detect_nearest_block(self.force_areas)
                 if adj_force_area is not None:
@@ -366,8 +378,6 @@ class Marbles(GameHandler):
     def render_success(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
         helper.render_text(frame,"You win!",WIDTH/2,HEIGHT/3,font_size=40)
-        helper.render_text(frame,"Thanks a lot for playing! Since this program is in beta,",WIDTH/2,HEIGHT/2.4,font_size=20)
-        helper.render_text(frame,"there are 4 games are currently in progress!",WIDTH/2,HEIGHT/2.1,font_size=20)
         self.return_lvls_btn.render(frame)
     def render_help(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))

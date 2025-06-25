@@ -7,7 +7,8 @@ from threading import Timer
 
 class Helper:
     def __init__(self):
-        pass
+        self.sounds = {}
+        self.channels = {}
     def render_text(self,frame,content,pos_x,pos_y,font_size=20,color=Color.WHITE):
         font = pg.font.Font("./assets/fonts/Inter-SemiBold.ttf",font_size)
         sentences = content.split("\n")
@@ -33,6 +34,19 @@ class Helper:
         pg.mixer.music.load(path)
         pg.mixer.music.play(1)
 
-    def play_sound(self,path):
-        sound = pg.mixer.Sound(path)
-        sound.play()
+    def play_sound(self,path,volume=1,continuous=False):
+        if path not in self.sounds:
+            self.sounds[path] = pg.mixer.Sound(path)
+        
+        sound = self.sounds[path]
+        sound.set_volume(volume)
+
+        if path not in self.channels:
+            self.channels[path] = pg.mixer.find_channel()
+        
+        channel = self.channels[path]
+
+        if channel is None: return
+
+        if not channel.get_busy() or not continuous:
+            channel.play(sound)

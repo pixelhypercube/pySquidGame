@@ -89,6 +89,9 @@ class TugOfWar(GameHandler):
                 player.render(frame)
             
             self.rope.render(frame)
+            x,y = self.rope.pos
+            w = self.rope.dim[0]
+            pg.draw.polygon(frame,Color.RED,[(x+w//2-w//50,y),(x+w//2,y+w//50),(x+w//2+w//50,y)])
 
             in_preparation = self.preparation_time*60-self.in_game_frame_count>0
             if not in_preparation:
@@ -251,8 +254,6 @@ class TugOfWar(GameHandler):
     def render_success(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
         helper.render_text(frame,"Success!",WIDTH/2,HEIGHT/3,font_size=40)
-        helper.render_text(frame,"Thanks a lot for playing! Since this program is in beta,",WIDTH/2,HEIGHT/2.4,font_size=20)
-        helper.render_text(frame,"there are 4 games are currently in progress!",WIDTH/2,HEIGHT/2.1,font_size=20)
         self.return_lvls_btn.render(frame)
     def render_paused(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))

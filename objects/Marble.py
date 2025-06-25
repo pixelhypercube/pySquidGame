@@ -13,6 +13,9 @@ class Marble(Circle):
         self.vel = [vx,vy]
         self.friction = 0.1
 
+        # collision set
+        self.colliding_with = set()
+
     def contact_circle(self, circle):
         dx = self.pos[0] - circle.pos[0]
         dy = self.pos[1] - circle.pos[1]

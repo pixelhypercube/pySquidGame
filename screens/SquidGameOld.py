@@ -17,8 +17,7 @@ helper = Helper()
 class SquidGame(GameHandler):
     def __init__(self, time=60, preparation_time=5, bg_color=Color.STONE,start_y=HEIGHT-100,finish_y=100,time_left=90,player_size=10,wall_thickness=10):
         super().__init__(time, preparation_time, bg_color)
-        super().__init__(time, preparation_time, bg_color)
-        self.help_start_btn = Button(WIDTH/2,HEIGHT/1.08,60,20,content="Start")
+        self.help_start_btn = Button(WIDTH/2,HEIGHT/1.1,60,20,content="Start")
         self.help_back_btn = Button(80, HEIGHT / 10, 50, 25, content="Back", next_screen="levels")
         self.restart_btn = Button(WIDTH/2,HEIGHT/2,100,25,content="Restart Game",visible=self.paused,function=lambda:self.restart_game())
         self.exit_btn = Button(WIDTH/2,HEIGHT/2+75,100,25,content="Exit Game",next_screen="levels",visible=self.paused)
@@ -51,20 +50,12 @@ class SquidGame(GameHandler):
         self.next_attack_cooldown = self.in_game_frame_count + self.attack_cooldown
 
         self.keys_held = {
-            # player 1
             pg.K_w:False,
             pg.K_a:False,
             pg.K_s:False,
-            pg.K_d:False,
-            pg.K_f:False,
-
-            # player 2
-            pg.K_UP:False,
-            pg.K_LEFT:False,
-            pg.K_DOWN:False,
-            pg.K_RIGHT:False,
-            pg.K_RCTRL:False,
+            pg.K_d:False
         }
+
 
         # SQUID LAYOUT AREAS
         self.circle_A = Circle(WIDTH//2-300,HEIGHT//2,50,Color.WHITE) # A and C
@@ -120,7 +111,21 @@ class SquidGame(GameHandler):
         if WIDTH//2-22 <= x <= WIDTH//2+22 and HEIGHT//2-30 <= y <= HEIGHT//2+30:
             return 'D_Bridge'
         return 'None'
-    
+
+    def follow_player(self,player_1,player_2):
+        p1_x,p1_y = player_1.pos
+        p2_x,p2_y = player_2.pos
+        angle = math.atan2(p2_y-p1_y,p2_x-p1_x)
+        vx,vy = math.cos(angle),math.sin(angle)
+        if player_2.is_hopping:
+            if self.in_game_frame_count >= self.next_hopping_cooldown:
+                self.player_2.accelerate(-vx,-vy)
+            else:
+                self.player_2.accelerate(0, 0)
+        else:
+            player_2.move(-vx*0.5,-vy*0.5)
+
+    # player_1 - attacker, player_2 - attacked player
     def attack_player(self,player_1,player_2):
         p1_x,p1_y = player_1.pos
         p2_x,p2_y = player_2.pos
@@ -132,7 +137,62 @@ class SquidGame(GameHandler):
 
     def check_path_travelled(self, sub, prev_area):
         return all(item in prev_area for item in sub)
-    
+
+    # for player_2
+    def defender_move(self,player_1,player_2):
+        p1_x,p1_y = player_1.pos
+        p2_x,p2_y = player_2.pos
+        player_1_area = player_1.area
+        player_2_area = player_2.area
+
+        # # triangle vertices
+        # C = (WIDTH//2 - 300, HEIGHT//2)
+        # E1 = (WIDTH//2 - 20, HEIGHT//10)
+        # E2 = (WIDTH//2 - 20, 9 * HEIGHT//10)
+
+        bx,by = self.circle_B.pos
+
+        angle = math.atan2(p2_y-p1_y,p2_x-p1_x)
+        vx = math.cos(angle)
+        vy = math.sin(angle)
+        if player_1_area=="None":
+            if player_2_area in ["D","D_Bridge","E1","E2","F1","F2"]:
+                # self.follow_player(player_1,player_2)
+                angle = math.atan2(p2_y-by,p2_x-bx)
+                vx = 0.5*math.cos(angle)
+                vy = 0.5*math.sin(angle)
+                player_2.move(-vx,-vy)
+            elif player_2_area=="B":
+                player_2.move(0.5,0)
+            elif player_2_area=="None":
+                if p2_x>WIDTH//2+300:
+                    if HEIGHT//10-40 < p2_y < 9*HEIGHT//1+40:
+                        if self.in_game_frame_count==self.next_hopping_cooldown:
+                            if p1_x<WIDTH//2+300:
+                                if p1_y>HEIGHT//2: player_2.move(0,1)
+                                else: player_2.move(0,-1)
+                            else:
+                                player_2.move(-vx,-vy)
+                    else:
+                        player_2.move(-vx,-vy)
+                else:
+                    if self.in_game_frame_count==self.next_hopping_cooldown:
+                        player_2.move(1 if vx<0 else -1,0 if p2_x>WIDTH//2 else -vy)
+        elif player_1_area in ["B","D"]:
+            if p2_x>WIDTH//2+300:
+                if player_2_area!="None" or self.in_game_frame_count==self.next_hopping_cooldown:
+                    if by-50 <= p2_y <= by+50:
+                        player_2.move(-0.5*vx,-0.5*vy)
+                    else:
+                        if p1_y>p2_y: player_2.move(0,1)
+                        else: player_2.move(0,-1)
+            else:
+                if player_2_area in ["B","D","D_Bridge"]:
+                    player_2.move(-0.5*vx,-0.5*vy)
+
+            
+
+
     def render(self,frame,mouse_x,mouse_y):
         if not self.paused:
             frame.fill(self.bg_color)
@@ -174,6 +234,8 @@ class SquidGame(GameHandler):
             else:
                 self.player_2.is_hopping = True
 
+            # player 2 movement
+            self.defender_move(self.player_1,self.player_2)
 
             # crossed bridges, then don't need to hop
             if self.check_path_travelled(["E1","F1","D_Bridge","F2","E2"],self.player_1.crossed_areas):
@@ -199,44 +261,21 @@ class SquidGame(GameHandler):
             pg.draw.line(frame,Color.WHITE,(WIDTH//2+300,HEIGHT//10),(WIDTH//2+300,9*HEIGHT//10),width=5)
             pg.draw.line(frame,Color.WHITE,(WIDTH//2+20,9*HEIGHT//10),(WIDTH//2+300,9*HEIGHT//10),width=5)
 
-            a1_x,a1_y = self.player_1.acc
-            a1_y = -0.5 if self.keys_held[pg.K_w] else 0.5 if self.keys_held[pg.K_s] else 0
-            a1_x = -0.5 if self.keys_held[pg.K_a] else 0.5 if self.keys_held[pg.K_d] else 0
-            magnitude = math.hypot(a1_x,a1_y)
+            ax,ay = self.player_1.acc
+            ay = -0.5 if self.keys_held[pg.K_w] else 0.5 if self.keys_held[pg.K_s] else 0
+            ax = -0.5 if self.keys_held[pg.K_a] else 0.5 if self.keys_held[pg.K_d] else 0
+            magnitude = math.hypot(ax,ay)
             if magnitude>0:
-                a1_y /= magnitude
-                a1_x /= magnitude
+                ay /= magnitude
+                ax /= magnitude
             
-            a2_x,a2_y = self.player_2.acc
-            a2_y = -0.5 if self.keys_held[pg.K_UP] else 0.5 if self.keys_held[pg.K_DOWN] else 0
-            a2_x = -0.5 if self.keys_held[pg.K_LEFT] else 0.5 if self.keys_held[pg.K_RIGHT] else 0
-            magnitude = math.hypot(a2_x,a2_y)
-            if magnitude>0:
-                a2_y /= magnitude
-                a2_x /= magnitude
-
-            # attack player(s)
-            if self.player_1.get_other_circle_dist(self.player_2)<=30:
-                if self.keys_held[pg.K_f]:
-                    self.attack_player(self.player_1,self.player_2)
-                if self.keys_held[pg.K_RCTRL]:
-                    self.attack_player(self.player_2,self.player_1)
-
             if self.player_1.is_hopping:
                 if self.in_game_frame_count >= self.next_hopping_cooldown:
-                    self.player_1.accelerate(a1_x,a1_y)
+                    self.player_1.accelerate(ax,ay)
                 else:
                     self.player_1.accelerate(0, 0)
             else:
-                self.player_1.accelerate(a1_x, a1_y)
-
-            if self.player_2.is_hopping:
-                if self.in_game_frame_count >= self.next_hopping_cooldown:
-                    self.player_2.accelerate(a2_x,a2_y)
-                else:
-                    self.player_2.accelerate(0, 0)
-            else:
-                self.player_2.accelerate(a2_x, a2_y)
+                self.player_1.accelerate(ax, ay)
 
             self.player_1.render(frame)
             self.player_2.render(frame)
@@ -245,6 +284,8 @@ class SquidGame(GameHandler):
                 self.next_hopping_cooldown = self.in_game_frame_count + self.hopping_cooldown
 
             if self.next_attack_cooldown==self.in_game_frame_count:
+                if self.player_2.get_other_circle_dist(self.player_1)<25:
+                    self.attack_player(self.player_2,self.player_1)
                 self.next_attack_cooldown = self.in_game_frame_count + self.attack_cooldown
 
             self.render_timer(10,10,frame,self.time_left)
@@ -277,7 +318,7 @@ class SquidGame(GameHandler):
         if key == pg.K_ESCAPE or key == pg.K_p:
             if self.game_state == 0:
                 self.toggle_paused()
-    
+
     def toggle_paused(self):
         self.paused = not self.paused
 
@@ -292,9 +333,12 @@ class SquidGame(GameHandler):
     def keyup_listener(self,key):
         if key in self.keys_held:
             self.keys_held[key] = False
-    
+
     def mousedown_listener(self,event,mouse_x,mouse_y):
-        pass
+        if event.type == pg.MOUSEBUTTONDOWN:
+            if self.player_2.contains(mouse_x,mouse_y):
+                if self.player_1.get_other_circle_dist(self.player_2)<=30:
+                    self.attack_player(self.player_1,self.player_2)
 
     def restart_game(self):
         self.in_game_frame_count = 0
@@ -328,7 +372,7 @@ class SquidGame(GameHandler):
         self.restart_btn.visible = False
         self.exit_btn.visible = False
         self.return_lvls_btn.visible = False
-    
+
     def toggle_game_state(self,frame,state):
         self.game_state = state
         if state==1:
@@ -347,7 +391,7 @@ class SquidGame(GameHandler):
             self.paused = True
             self.return_lvls_btn.visible = False
             self.render_help(frame)
-    
+
     def render_help(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
         helper.render_text(frame, "How to play: Squid Game (Final Game)", WIDTH // 2, 50, color=Color.WHITE, font_size=28)
@@ -360,7 +404,11 @@ class SquidGame(GameHandler):
             WIDTH // 2, HEIGHT // 2.1, [int(500 / 2.25), int(375 / 2.25)]
         )
         helper.render_text(
-            frame, "Controls:\nW,A,S,D (Player 1), ←↑→↓ (Player 2) buttons to move,\n F (Player 1), RCtrl (Player 2) buttons to attack",
+            frame, "Use WASD (Player 1) to move.",
+            WIDTH // 2, HEIGHT // 1.29, font_size=20, color=Color.WHITE
+        )
+        helper.render_text(
+            frame, "Block or push your opponent while staying in bounds.",
             WIDTH // 2, HEIGHT // 1.22, font_size=20, color=Color.WHITE
         )
 
@@ -370,12 +418,14 @@ class SquidGame(GameHandler):
 
     def render_fail(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
-        helper.render_text(frame,"Attacker Wins!",WIDTH/2,HEIGHT/3,font_size=40)
+        helper.render_text(frame,"Eliminated :(",WIDTH/2,HEIGHT/3,font_size=40)
+        helper.render_text(frame,"The good thing is, you can revive yourself",WIDTH/2,HEIGHT/2.4,font_size=20)
         helper.render_text(frame," by clicking the 'Go back' button! :)",WIDTH/2,HEIGHT/2.1,font_size=20)
         self.return_lvls_btn.render(frame)
     def render_success(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
-        helper.render_text(frame,"Defender Wins!",WIDTH/2,HEIGHT/3,font_size=40)
+        helper.render_text(frame,"Success!",WIDTH/2,HEIGHT/3,font_size=40)
+        helper.render_text(frame,"Thanks a lot for playing! Since this program is in beta,",WIDTH/2,HEIGHT/2.4,font_size=20)
         helper.render_text(frame,"there are 4 games are currently in progress!",WIDTH/2,HEIGHT/2.1,font_size=20)
         self.return_lvls_btn.render(frame)
     def render_paused(self,frame):
