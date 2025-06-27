@@ -13,6 +13,18 @@ from screens.Marbles import Marbles
 from screens.GlassSteppingStones import GlassSteppingStones
 from screens.SquidGame import SquidGame
 from screens.Credits import Credits
+import os
+import sys
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+def clean_path(path: str) -> str:
+    return path.lstrip("./\\")
+
 current_screen = "home"
 screens = {
     "home":Home(),
@@ -31,7 +43,7 @@ pg.init()
 pg.font.init()
 
 pg.display.set_caption("pySquidGame")
-icon = pg.image.load('./assets/img/icon.png')
+icon = pg.image.load(resource_path(clean_path('./assets/img/favicon.ico')))
 pg.display.set_icon(icon)
 
 frame = pg.display.set_mode([WIDTH,HEIGHT])

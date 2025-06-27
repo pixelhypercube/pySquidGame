@@ -5,12 +5,37 @@ import random
 import webbrowser
 from threading import Timer
 
+import sys
+import os
+import numpy as np
+from scipy.ndimage import gaussian_filter
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS  # PyInstaller sets this
+    except AttributeError:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+    
+def gaussian_smooth(surface, sigma=1.5):
+    arr = pg.surfarray.array3d(surface).astype(float)
+
+    for i in range(3):
+        arr[:,:,i] = gaussian_filter(arr[:,:,i], sigma=sigma)
+
+    arr = arr.astype(np.uint8)
+    arr = np.transpose(arr,(1,0,2))
+    return pg.surfarray.make_surface(arr)
+
+def clean_path(path: str) -> str:
+    return path.lstrip("./\\")
+
 class Helper:
     def __init__(self):
         self.sounds = {}
         self.channels = {}
     def render_text(self,frame,content,pos_x,pos_y,font_size=20,color=Color.WHITE,align="center", underline=False):
-        font = pg.font.Font("./assets/fonts/Inter-SemiBold.ttf",font_size)
+        font = pg.font.Font(resource_path("assets/fonts/Inter-SemiBold.ttf"),font_size)
         sentences = content.split("\n")
         x = pos_x
         y = pos_y
@@ -43,10 +68,12 @@ class Helper:
 
             y+=text_height
 
-    def render_image(self,frame,path,pos_x,pos_y,size=None):
-        image = pg.image.load(path)
+    def render_image(self,frame,path,pos_x,pos_y,size=None,smooth=True):
+        image = pg.image.load(resource_path(clean_path(path))).convert_alpha()
         if size is not None:
             image = pg.transform.scale(image,(size[0]*2,size[1]*2))
+        if smooth:
+            gaussian_smooth(image,sigma=2)
         imageRect = image.get_rect()
         imageRect.center = (pos_x,pos_y)
         frame.blit(image,imageRect)
@@ -57,7 +84,7 @@ class Helper:
 
     def play_sound(self,path,volume=1,continuous=False):
         if path not in self.sounds:
-            self.sounds[path] = pg.mixer.Sound(path)
+            self.sounds[path] = pg.mixer.Sound(resource_path(clean_path(path)))
         
         sound = self.sounds[path]
         sound.set_volume(volume)

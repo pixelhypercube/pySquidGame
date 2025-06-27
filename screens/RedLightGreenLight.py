@@ -30,13 +30,9 @@ class RedLightGreenLight(GameHandler):
 
         # assets
         self.assets = {
-            "doll_front": pg.image.load("./assets/img/rlgl/dollFront.png"),
-            "doll_back": pg.image.load("./assets/img/rlgl/dollBack.png"),
+            "doll_front": "assets/img/rlgl/dollFront.png",
+            "doll_back": "assets/img/rlgl/dollBack.png",
         }
-
-        self.assets["doll_front"] = pg.transform.scale(self.assets["doll_front"], (80,80))
-        self.assets["doll_back"] = pg.transform.scale(self.assets["doll_back"], (80,80))
-
         self.jitter_counter = 0
         self.eliminated_players = set()
 
@@ -237,8 +233,14 @@ class RedLightGreenLight(GameHandler):
         if not self.paused:
             frame.fill(self.bg_color)
 
-            doll_image = self.assets["doll_front"] if (self.is_red_light or (self.preparation_time * 60 - self.in_game_frame_count > 0)) else self.assets["doll_back"]
-            frame.blit(doll_image, (WIDTH / 2 - 40, HEIGHT / 12 - 40))
+            helper.render_image(
+                frame,
+                self.assets["doll_back"] if (self.is_red_light or (self.preparation_time * 60 - self.in_game_frame_count > 0)) else self.assets["doll_front"],
+                WIDTH//2,
+                50,
+                size=(40,40)
+            )  
+            
 
             pg.draw.line(frame, Color.RED, (0, self.start_y), (WIDTH, self.start_y), 5)
             pg.draw.line(frame, Color.RED, (0, self.finish_y), (WIDTH, self.finish_y), 5)
