@@ -18,9 +18,10 @@ class GameHandler:
         self.paused = True
     def render_prep_screen(self,frame,time_left):
         pg.draw.rect(frame,Color.SQUID_GREY,(WIDTH/2-80,HEIGHT//3,160,80))
+        pg.draw.rect(frame,Color.WHITE,(WIDTH/2-80,HEIGHT//3,160,80),width=2)
         helper.render_text(frame,"Get ready in",WIDTH/2,HEIGHT//3+20,font_size=20)
         helper.render_text(frame,str(time_left),WIDTH/2,HEIGHT//3+50,font_size=30)
-    def render_seven_seg_num(self,frame,x,y,digit,off_color=Color.DARK_GREY,on_color=Color.SQUID_PINK,font_size=20):
+    def render_seven_seg_num(self,frame,x,y,digit,off_color=Color.DARK_DARK_GREY,on_color=Color.SQUID_PINK,font_size=20):
         segments = {
             "A": [(2,1),(3,0),(7,0),(8,1),(7,2),(3,2)],
             "B": [(9,2),(10,3),(10,7),(9,8),(8,7),(8,3)],
@@ -50,7 +51,7 @@ class GameHandler:
             color = on_color if name in active else off_color
             pg.draw.polygon(frame, color, scaled_points)
 
-    def render_timer(self,x,y,frame,time_left,on_color=Color.SQUID_PINK,off_color=Color.DARK_GREY,font_size=20):
+    def render_timer(self,x,y,frame,time_left,on_color=Color.SQUID_PINK,off_color=Color.DARK_DARK_GREY,font_size=20):
         time_seconds = (time_left//60)%60
         time_minutes = math.floor(time_left//3600)
         time_disp = f"{("0" if time_minutes<10 else "") + str(time_minutes)}:{("0" if time_seconds<10 else "") + str(time_seconds)}"

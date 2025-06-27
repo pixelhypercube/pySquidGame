@@ -94,13 +94,39 @@ class Circle:
         return math.hypot(oc_x-x,oc_y-y)
 
     def contact_circle(self,circle):
-        distance = math.sqrt((self.pos[0]-circle.pos[0])**2+(self.pos[1]-circle.pos[1])**2)
-        if (distance<circle.r+self.r):
-            angle = math.atan2(self.pos[1]-circle.pos[1],self.pos[0]-circle.pos[0])
-            self.vel[0] += math.cos(angle) * 0.3
-            self.vel[1] += math.sin(angle) * 0.3
-            circle.vel[0] -= math.cos(angle) * 0.3
-            circle.vel[1] -= math.sin(angle) * 0.3
+        dx = self.pos[0] - circle.pos[0]
+        dy = self.pos[1] - circle.pos[1]
+        distance = math.hypot(dx, dy)
+        min_dist = self.r + circle.r
+
+        if distance < min_dist and distance != 0:
+            overlap = 0.5 * (min_dist - distance)
+            norm_dx = dx / distance
+            norm_dy = dy / distance
+            self.pos[0] += norm_dx * overlap
+            self.pos[1] += norm_dy * overlap
+            circle.pos[0] -= norm_dx * overlap
+            circle.pos[1] -= norm_dy * overlap
+
+            rel_vx = self.vel[0] - circle.vel[0]
+            rel_vy = self.vel[1] - circle.vel[1]
+
+            vel_along_normal = rel_vx * norm_dx + rel_vy * norm_dy
+
+            if vel_along_normal > 0:
+                return
+
+            restitution = 1  # 1 = perfectly elastic, 0 = inelastic
+            impulse = -(1 + restitution) * vel_along_normal
+            impulse /= 2 
+
+            impulse_x = impulse * norm_dx
+            impulse_y = impulse * norm_dy
+
+            self.vel[0] += impulse_x
+            self.vel[1] += impulse_y
+            circle.vel[0] -= impulse_x
+            circle.vel[1] -= impulse_y
     
     def contact_block(self, block):
         block_x, block_y, block_w, block_h = block.pos[0], block.pos[1], block.dim[0], block.dim[1]
@@ -122,4 +148,4 @@ class Circle:
     
     def contains(self, x, y):
         o_x,o_y = self.pos
-        return (o_x-x)**2 + (o_y-y)**2 <= self.r**2
+        return (o_x-x)**2+(o_y-y)**2<=self.r**2

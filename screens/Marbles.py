@@ -26,10 +26,10 @@ class Marbles(GameHandler):
         self.exit_btn = Button(WIDTH/2,HEIGHT/2+75,100,25,content="Exit Game",next_screen="levels",visible=self.paused)
         
         self.help_start_btn = Button(WIDTH/2,HEIGHT/1.12,60,20,content="Start")
-        self.help_back_btn = Button(80, HEIGHT / 10, 50, 25, content="Back", next_screen="levels")
+        self.help_back_btn = Button(80, HEIGHT / 10, 50, 25, content="Back\nto Levels", next_screen="levels")
 
         # fail/success screen
-        self.return_lvls_btn = Button(WIDTH/2,HEIGHT/1.6,100,30,content="Go back",next_screen="levels",visible=self.paused)
+        self.return_lvls_btn = Button(WIDTH/2,HEIGHT/1.6,100,30,content="Back to Levels",next_screen="levels",visible=self.paused)
         self.buttons = [
             self.help_start_btn,self.help_back_btn,self.restart_btn,self.exit_btn,self.return_lvls_btn
         ]
@@ -194,6 +194,11 @@ class Marbles(GameHandler):
                 force_area.render(frame)
             for marble in self.marbles:
                 marble.render(frame)
+                
+                vx,vy = marble.vel
+                mag = math.hypot(vx,vy)*0.1
+                if mag>0.1:
+                    helper.play_sound("./assets/sounds/marbleMoving.wav",volume=mag*2,continuous=True)
 
                 fx,fy = self.get_terrain_force(*marble.pos)
                 marble.vel[0] += fx
@@ -258,6 +263,7 @@ class Marbles(GameHandler):
                     self.toggle_game_state(frame,3)
                 else:
                     self.toggle_game_state(frame,2)
+                    helper.play_sound("./assets/sounds/gunShotLong.wav")
 
             self.render_timer(10,10,frame,self.time_left)
             self.marbles_left_marble.render(frame)
@@ -289,6 +295,9 @@ class Marbles(GameHandler):
             # game over:
             if self.time_left<=0:
                 self.toggle_game_state(frame,2)
+                helper.play_sound("./assets/sounds/gunShotLong.wav")
+            
+            helper.render_text(frame,"Press 'Esc' or 'P' to pause",WIDTH-20,HEIGHT-20,font_size=18,color=Color.BLACK,align="right")
             self.in_game_frame_count+=1
         else:
             if self.game_state == 1:
@@ -354,6 +363,7 @@ class Marbles(GameHandler):
             vx = math.cos(angle)*distance*0.2
             vy = math.sin(angle)*distance*0.2
             self.marbles.append(Marble(first_mouse_x,first_mouse_y,self.marble_size,Color.SQUID_TEAL,player_tag=1,vx=vx,vy=vy,max_speed=100))
+        helper.play_sound("./assets/sounds/marbleDrop.wav",volume=0.25,continuous=True)
 
     def shoot_marble_comp(self,x,y):
         # angle = 1.25*math.pi+random.random()*math.pi//2
@@ -362,18 +372,19 @@ class Marbles(GameHandler):
         distance = random.random()*10+45
         vx,vy = math.cos(angle)*distance, math.sin(angle)*distance
         self.marbles.append(Marble(x,y,self.marble_size,Color.SQUID_PINK,player_tag=2,vx=vx,vy=vy,max_speed=100))
+        helper.play_sound("./assets/sounds/marbleDrop.wav",volume=0.25,continuous=True)
 
     def render_fail(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
         helper.render_text(frame,"Eliminated :(",WIDTH/2,HEIGHT/3,font_size=40)
         helper.render_text(frame,"The good thing is, you can revive yourself",WIDTH/2,HEIGHT/2.4,font_size=20)
-        helper.render_text(frame," by clicking the 'Go back' button! :)",WIDTH/2,HEIGHT/2.1,font_size=20)
+        helper.render_text(frame," by clicking the 'Back to Levels' button! :)",WIDTH/2,HEIGHT/2.1,font_size=20)
         self.return_lvls_btn.render(frame)
     def render_draw(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
         helper.render_text(frame,"It's a draw!",WIDTH/2,HEIGHT/3,font_size=40)
         # helper.render_text(frame,"The good thing is, you can revive yourself",WIDTH/2,HEIGHT/2.4,font_size=20)
-        # helper.render_text(frame," by clicking the 'Go back' button! :)",WIDTH/2,HEIGHT/2.1,font_size=20)
+        # helper.render_text(frame," by clicking the 'Back to Levels' button! :)",WIDTH/2,HEIGHT/2.1,font_size=20)
         self.return_lvls_btn.render(frame)
     def render_success(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
@@ -381,23 +392,23 @@ class Marbles(GameHandler):
         self.return_lvls_btn.render(frame)
     def render_help(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
-        helper.render_text(frame, "How to play: Marbles", WIDTH//2, 50, color=Color.WHITE, font_size=30)
+        helper.render_text(frame, "How to play: Marbles", WIDTH//2, 50, color=Color.WHITE, font_size=40,underline=True)
         helper.render_text(
             frame, "Objective: Sink more marbles into the large hole than your opponent!",
             WIDTH // 2, HEIGHT // 6, font_size=22, color=Color.WHITE
         )
         helper.render_image(
             frame, "./assets/img/marbles/demoWithLabels.png",
-            WIDTH // 2, HEIGHT // 2.1, [int(500 / 2.25), int(375 / 2.25)]
+            WIDTH // 2, HEIGHT // 1.95, [int(500 / 2), int(375 / 2)]
         )
-        helper.render_text(
-            frame, "You control the teal-colored marbles.",
-            WIDTH // 2, HEIGHT // 1.29, font_size=20, color=Color.WHITE
-        )
-        helper.render_text(
-            frame, "Click and drag to aim. Release to shoot.",
-            WIDTH // 2, HEIGHT // 1.22, font_size=20, color=Color.WHITE
-        )
+        # helper.render_text(
+        #     frame, "You control the teal-colored marbles.",
+        #     WIDTH // 2, HEIGHT // 1.29, font_size=20, color=Color.WHITE
+        # )
+        # helper.render_text(
+        #     frame, "Click and drag to aim. Release to shoot.",
+        #     WIDTH // 2, HEIGHT // 1.22, font_size=20, color=Color.WHITE
+        # )
         self.help_start_btn.render(frame)
         self.help_back_btn.render(frame)
         self.help_start_btn.function = lambda: self.toggle_game_state(frame,0) 

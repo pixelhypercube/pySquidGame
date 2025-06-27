@@ -19,10 +19,10 @@ class HoneyComb(GameHandler):
     def __init__(self, time=60, preparation_time=5, bg_color=Color.SAND,time_left=120,dalgona_size=150):
         super().__init__(time, preparation_time, bg_color)
         self.help_start_btn = Button(WIDTH/2,HEIGHT/1.1,60,20,content="Start")
-        self.help_back_btn = Button(80, HEIGHT / 10, 50, 25, content="Back", next_screen="levels")
+        self.help_back_btn = Button(80, HEIGHT / 10, 50, 25, content="Back\nto Levels", next_screen="levels")
         self.restart_btn = Button(WIDTH/2,HEIGHT/2,100,25,content="Restart Game",visible=self.paused,function=lambda:self.restart_game())
         self.exit_btn = Button(WIDTH/2,HEIGHT/2+75,100,25,content="Exit Game",next_screen="levels",visible=self.paused)
-        self.return_lvls_btn = Button(WIDTH/2,HEIGHT/1.6,100,30,content="Go back",next_screen="levels",visible=self.paused)
+        self.return_lvls_btn = Button(WIDTH/2,HEIGHT/1.6,100,30,content="Back to Levels",next_screen="levels",visible=self.paused)
         self.buttons = [
             self.help_start_btn,self.help_back_btn,self.restart_btn,self.exit_btn,self.return_lvls_btn
         ]
@@ -32,7 +32,7 @@ class HoneyComb(GameHandler):
         self.scrape_color = Color.HONEYCOMB_DARK_YELLOW
 
         # dalgona
-        self.dalgona_shapes = ["circle", "star", "square", "umbrella"]
+        self.dalgona_shapes = ["circle", "star", "triangle", "umbrella"]
         self.dalgona = Dalgona(WIDTH//2, HEIGHT//2, self.dalgona_size, Color.HONEYCOMB_YELLOW,self.dalgona_shapes[random.randint(0, len(self.dalgona_shapes) - 1)],stroke_thickness=10)
         self.selected_shape = None
 
@@ -54,37 +54,37 @@ class HoneyComb(GameHandler):
         line_mag = math.hypot(x2-x1,y2-y1)
         if line_mag==0:
             return math.hypot(px-x1,py-y1)
-        u = max(0, min(1, ((px - x1)*(x2 - x1) + (py - y1)*(y2 - y1)) / (line_mag ** 2)))
-        ix = x1 + u * (x2 - x1)
-        iy = y1 + u * (y2 - y1)
-        return math.hypot(px - ix, py - iy)
+        u = max(0, min(1, ((px-x1)*(x2-x1) + (py-y1)*(y2-y1)) / (line_mag**2)))
+        ix = x1 + u * (x2-x1)
+        iy = y1 + u * (y2-y1)
+        return math.hypot(px-ix,py-iy)
 
     def point_on_arc_dist(self, px, py, cx, cy, radius, angle_start, angle_end, angle_slack=0.08):
-        dx = px - cx
-        dy = py - cy
+        dx = px-cx
+        dy = py-cy
         dist_to_center = math.hypot(dx, dy)
 
         angle = math.atan2(dy, dx)
-        angle = (angle-math.pi) % (2 * math.pi)
+        angle = (angle-math.pi) % (2*math.pi)
 
-        angle_start %= 2 * math.pi
-        angle_end %= 2 * math.pi
+        angle_start %= 2*math.pi
+        angle_end %= 2*math.pi
 
         def within(a, start, end):
             if start <= end:
-                return (start - angle_slack) <= a <= (end + angle_slack)
+                return (start-angle_slack) <= a <= (end+angle_slack)
             else:
-                return a >= (start - angle_slack) or a <= (end + angle_slack)
+                return a >= (start-angle_slack) or a <= (end+angle_slack)
 
         if within(angle, angle_start, angle_end):
             return abs(dist_to_center - radius)
         else:
             # Fallback to arc endpoints
-            x1 = cx + math.cos(angle_start + math.pi / 2) * radius
-            y1 = cy + math.sin(angle_start + math.pi / 2) * radius
-            x2 = cx + math.cos(angle_end + math.pi / 2) * radius
-            y2 = cy + math.sin(angle_end + math.pi / 2) * radius
-            return min(math.hypot(px - x1, py - y1), math.hypot(px - x2, py - y2))
+            x1 = cx + math.cos(angle_start+math.pi/2)*radius
+            y1 = cy + math.sin(angle_start+math.pi/2)*radius
+            x2 = cx + math.cos(angle_end+math.pi/2)*radius
+            y2 = cy + math.sin(angle_end+math.pi/2)*radius
+            return min(math.hypot(px-x1,py-y1), math.hypot(px-x2,py-y2))
 
     def calc_accuracy(self):
         total_points = len(self.needle_points)
@@ -104,27 +104,22 @@ class HoneyComb(GameHandler):
                 dist = math.hypot(dx,dy)
                 if abs(dist-ideal_radius)<=tolerance:
                     accurate_points+=1
-        elif self.dalgona.shape=="square":
-            self.min_points_required = 800
+        elif self.dalgona.shape == "triangle":
+            self.min_points_required = 700
+            num_points = 3
+            points = []
+            for i in range(num_points):
+                angle = 2*i*math.pi/num_points
+                dist = r//1.75
+                px = cx + math.cos(angle-math.pi/2)*dist
+                py = cy + math.sin(angle-math.pi/2)*dist
+                points.append((px,py))
 
-            half = r // 2
-            left = cx-half
-            right = cx+half
-            top = cy-half
-            bottom = cy+half
-
-            corners = [
-                (left,top),
-                (right,top),
-                (right,bottom),
-                (left,bottom)
-            ]
-            edges = [(corners[i], corners[(i+1)%4]) for i in range(4)]
-            for px,py in self.needle_points:
-                for (x1,y1),(x2,y2) in edges:
-                    if self.point_to_segment_dist(px,py,x1,y1,x2,y2) <= tolerance:
-                        accurate_points += 1
-                        break
+            edges = [(points[i],points[(i+1)%len(points)]) for i in range(len(points))]
+            tolerance = self.dalgona.stroke_thickness
+            for px, py in self.needle_points:
+                if any(self.point_to_segment_dist(px,py,x1,y1,x2,y2) <= tolerance for (x1,y1),(x2,y2) in edges):
+                    accurate_points += 1
         elif self.dalgona.shape=="star":
             self.min_points_required = 800
 
@@ -244,6 +239,9 @@ class HoneyComb(GameHandler):
         self.furthest_needle_point_dist = 0
         # self.accurate_needle_points = [] # for debugging
 
+        self.prev_mouse_pos = None
+        self.mouse_speed = 0
+
         self.help_back_btn.visible = True
         self.help_start_btn.visible = True
 
@@ -325,13 +323,14 @@ class HoneyComb(GameHandler):
     def scrape_needle(self,mouse_x,mouse_y):
         if ((WIDTH//2-mouse_x)**2+(HEIGHT//2-mouse_y)**2<self.dalgona_size**2):
             self.needle_points.append((mouse_x,mouse_y))
-            helper.play_sound("./assets/sounds/scrape.wav",volume=0.5,continuous=True)
+            helper.play_sound(f"./assets/sounds/scrape{random.randint(1,5)}.wav",volume=0.5,continuous=True)
 
     def mousedown_listener(self,event,mouse_x,mouse_y):
         if event.type==pg.MOUSEMOTION:
             if pg.mouse.get_pressed()[0]:
                 in_preparation = self.preparation_time*60-self.in_game_frame_count>0
                 if not in_preparation and not self.paused:
+                    self.mouse_speed = 0
                     if self.prev_mouse_pos is not None:
                         prev_mouse_x,prev_mouse_y = self.prev_mouse_pos
                         self.mouse_speed = math.hypot(prev_mouse_x-mouse_x,prev_mouse_y-mouse_y)
@@ -339,10 +338,13 @@ class HoneyComb(GameHandler):
                     self.scrape_needle(mouse_x,mouse_y)
                     self.furthest_needle_point_dist = self.max_distance(self.needle_points)
         elif event.type==pg.MOUSEBUTTONUP:
-            pass
+            in_preparation = self.preparation_time*60-self.in_game_frame_count>0
+            if not in_preparation and not self.paused:
+                self.prev_mouse_pos = None
+                self.mouse_speed = 0
 
     def cross(self, o, a, b):
-        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+        return (a[0]-o[0]) * (b[1]-o[1]) - (a[1]-o[1]) * (b[0]-o[0])
 
     def convex_hull(self, points):
         points = sorted(set(points))
@@ -366,20 +368,20 @@ class HoneyComb(GameHandler):
     def max_distance(self, points) -> float:
         hull = self.convex_hull(points)
         n = len(hull)
-        if n == 1: return 0.0
-        if n == 2: return math.dist(hull[0], hull[1])
+        if n==1: return 0.0
+        if n==2: return math.dist(hull[0],hull[1])
 
         max_dist = 0
         j = 1
         for i in range(n):
             while True:
-                ni = (i + 1) % n
-                nj = (j + 1) % n
-                if abs(self.cross(hull[i], hull[ni], hull[nj])) > abs(self.cross(hull[i], hull[ni], hull[j])):
+                ni = (i+1) % n
+                nj = (j+1) % n
+                if abs(self.cross(hull[i],hull[ni],hull[nj])) > abs(self.cross(hull[i],hull[ni],hull[j])):
                     j = nj
                 else:
                     break
-            max_dist = max(max_dist, math.dist(hull[i], hull[j]))
+            max_dist = max(max_dist, math.dist(hull[i],hull[j]))
 
         return max_dist
 
@@ -403,8 +405,10 @@ class HoneyComb(GameHandler):
             if self.furthest_needle_point_dist>=self.dalgona_size and len(self.needle_points) >= self.min_points_required:
                 if accuracy < 60:
                     self.toggle_game_state(frame, 2)
+                    helper.play_sound("./assets/sounds/biscuitBreak.wav")
                 elif accuracy >= 90:
                     self.toggle_game_state(frame, 1)
+                    helper.play_sound("./assets/sounds/biscuitBreak.wav")
 
             self.render_timer(10,10,frame,self.time_left)
 
@@ -417,6 +421,9 @@ class HoneyComb(GameHandler):
             # game over:
             if self.time_left<=0 or self.mouse_speed>=10:
                 self.toggle_game_state(frame,2)
+                helper.play_sound("./assets/sounds/gunShotLong.wav")
+
+            helper.render_text(frame,"Press 'Esc' or 'P' to pause",WIDTH-20,HEIGHT-20,font_size=18,color=Color.BLACK,align="right")
 
             self.in_game_frame_count+=1
             # for debug
@@ -437,7 +444,7 @@ class HoneyComb(GameHandler):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
         helper.render_text(frame,"Eliminated :(",WIDTH/2,HEIGHT/3,font_size=40)
         helper.render_text(frame,"The good thing is, you can revive yourself",WIDTH/2,HEIGHT/2.4,font_size=20)
-        helper.render_text(frame," by clicking the 'Go back' button! :)",WIDTH/2,HEIGHT/2.1,font_size=20)
+        helper.render_text(frame," by clicking the 'Back to Levels' button! :)",WIDTH/2,HEIGHT/2.1,font_size=20)
         self.return_lvls_btn.render(frame)
     def render_success(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
@@ -445,7 +452,7 @@ class HoneyComb(GameHandler):
         self.return_lvls_btn.render(frame)
     def render_help(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
-        helper.render_text(frame, "How to play: Honeycomb", WIDTH // 2, 50, color=Color.WHITE, font_size=30)
+        helper.render_text(frame, "How to play: Honeycomb", WIDTH // 2, 50, color=Color.WHITE, font_size=40,underline=True)
         helper.render_text(
             frame, "Objective: Carve out the shape without breaking the honeycomb!",
             WIDTH // 2, HEIGHT // 6, font_size=22, color=Color.WHITE

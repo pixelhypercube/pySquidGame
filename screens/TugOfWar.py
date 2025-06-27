@@ -18,10 +18,10 @@ class TugOfWar(GameHandler):
     def __init__(self, time=60, preparation_time=5, bg_color=Color.BLACK,start_y=HEIGHT-100,finish_y=100,time_left=60,player_size=10,wall_thickness=10):
         super().__init__(time, preparation_time, bg_color)
         self.help_start_btn = Button(WIDTH/2,HEIGHT/1.1,60,20,content="Start")
-        self.help_back_btn = Button(80, HEIGHT / 10, 50, 25, content="Back", next_screen="levels")
+        self.help_back_btn = Button(80, HEIGHT / 10, 50, 25, content="Back\nto Levels", next_screen="levels")
         self.restart_btn = Button(WIDTH/2,HEIGHT/2,100,25,content="Restart Game",visible=self.paused,function=lambda:self.restart_game())
         self.exit_btn = Button(WIDTH/2,HEIGHT/2+75,100,25,content="Exit Game",next_screen="levels",visible=self.paused)
-        self.return_lvls_btn = Button(WIDTH/2,HEIGHT/1.6,100,30,content="Go back",next_screen="levels",visible=self.paused)
+        self.return_lvls_btn = Button(WIDTH/2,HEIGHT/1.6,100,30,content="Back to Levels",next_screen="levels",visible=self.paused)
         self.buttons = [
             self.help_start_btn,self.help_back_btn,self.restart_btn,self.exit_btn,self.return_lvls_btn
         ]
@@ -30,7 +30,12 @@ class TugOfWar(GameHandler):
         self.player_size = 10
 
         self.platform_left = Block(0,HEIGHT//2,WIDTH//2-75,20,Color.YELLOW)
+        self.platform_left_support = Block(0,HEIGHT//2,20,HEIGHT//2,Color.YELLOW)
         self.platform_right = Block(WIDTH//2+75,HEIGHT//2,WIDTH//2-75,20,Color.YELLOW)
+        self.platform_right_support = Block(WIDTH-20,HEIGHT//2,20,HEIGHT//2,Color.YELLOW)
+
+        self.middle_block = Block(WIDTH//2-10,HEIGHT//3,20,HEIGHT//5,Color.YELLOW)
+        self.middle_support = Block(WIDTH//2-5,0,10,HEIGHT//3,Color.YELLOW)
 
         distinct_nums = random.sample(range(1,501),self.player_size*2)
 
@@ -74,16 +79,26 @@ class TugOfWar(GameHandler):
         for i,player in enumerate(self.players_right):
             player_y = player.pos[1]
             player.set_pos(WIDTH-50-i*self.player_size*2+self.balance,player_y)
+        if balance!=0:
+            helper.play_sound(f"./assets/sounds/pull{random.randint(1,7)}.wav",continuous=True)
 
     def render(self,frame,mouse_x,mouse_y):
         if not self.paused:
             frame.fill(self.bg_color)
 
+            helper.render_text(frame,"↓You are controlling this side! ↓",WIDTH//1.333,100)
+
             self.platform_left.render(frame)
             self.platform_right.render(frame)
             
+            self.platform_left_support.render(frame)
+            self.platform_right_support.render(frame)
+
+            self.middle_support.render(frame)
+            self.middle_block.render(frame)
+            
             if self.mouse_x_speed is not None:
-                self.set_balance(self.balance+self.mouse_x_speed//10)
+                self.set_balance(self.balance+self.mouse_x_speed*0.025)
 
             for player in self.players_left+self.players_right:
                 player.render(frame)
@@ -94,13 +109,18 @@ class TugOfWar(GameHandler):
             pg.draw.polygon(frame,Color.RED,[(x+w//2-w//50,y),(x+w//2,y+w//50),(x+w//2+w//50,y)])
 
             in_preparation = self.preparation_time*60-self.in_game_frame_count>0
+            if self.preparation_time*60-self.in_game_frame_count==0:
+                self.pull_duration_cooldown = self.in_game_frame_count + self.pull_duration
+                self.next_pull_cooldown = self.in_game_frame_count + self.pull_cooldown
+
             if not in_preparation:
                 if (self.in_game_frame_count==self.next_pull_cooldown):
                     self.pull_duration_cooldown = self.in_game_frame_count + self.pull_duration
                     self.next_pull_cooldown = self.in_game_frame_count + self.pull_cooldown
 
                 if self.in_game_frame_count<self.pull_duration_cooldown and self.in_game_frame_count>self.pull_duration:
-                    force = 0.3*(self.pull_duration_cooldown-self.in_game_frame_count)
+                    mag = random.random()*0.05+0.15
+                    force = mag*(self.pull_duration_cooldown-self.in_game_frame_count)
                     self.set_balance(self.balance-force)
 
             rightmost_left_player = self.players_left[len(self.players_left)-1]
@@ -116,12 +136,16 @@ class TugOfWar(GameHandler):
 
             if (in_preparation):
                 self.render_prep_screen(frame,int((self.preparation_time*60-self.in_game_frame_count)/60)+1)
+            elif self.preparation_time*60-self.in_game_frame_count==0:
+                self.pull_duration_cooldown = self.in_game_frame_count + self.pull_duration
             else:
                 self.time_left-=1
             
             # game over:
             if self.time_left<=0:
                 self.toggle_game_state(frame,2)
+
+            helper.render_text(frame,"Press 'Esc' or 'P' to pause",WIDTH-20,HEIGHT-20,font_size=18,color=Color.WHITE,align="right")
             self.in_game_frame_count += 1
         else:
             if self.game_state == 1:
@@ -153,17 +177,20 @@ class TugOfWar(GameHandler):
         pass
 
     def mousedown_listener(self,event,mouse_x,mouse_y):
+        in_preparation = self.preparation_time*60-self.in_game_frame_count>0
         if event.type == pg.MOUSEBUTTONDOWN:
-            in_preparation = self.preparation_time*60-self.in_game_frame_count>0
             if not in_preparation:
                 self.prev_mouse_x = mouse_x
         if event.type == pg.MOUSEMOTION:
-            in_preparation = self.preparation_time*60-self.in_game_frame_count>0
             if not in_preparation:
                 if not self.paused and pg.mouse.get_pressed()[0]:
                     self.mouse_x_speed = self.get_mouse_x_speed(mouse_x)
                 else:
                     self.mouse_x_speed = 0
+        if event.type == pg.MOUSEBUTTONUP:
+            if not in_preparation:
+                self.prev_mouse_x = None
+
     
     def mouseup_listener(self,event,mouse_x,mouse_y):
         pass
@@ -182,11 +209,11 @@ class TugOfWar(GameHandler):
         self.platform_right = Block(WIDTH//2+75,HEIGHT//2,WIDTH//2-75,20,Color.YELLOW)
 
         self.players_left = [
-            Player(50+i*self.player_size*2,HEIGHT//2-self.player_size,self.player_size,Color.SQUID_TEAL,num_label=random.randint(1,500)) for i in range(self.num_players)
+            Player(50+i*self.player_size*2,HEIGHT//2-self.player_size,self.player_size,Color.get_random_color_from_base(Color.SQUID_TEAL),num_label=random.randint(1,500)) for i in range(self.num_players)
         ]
 
         self.players_right = [
-            Player(WIDTH-50-i*self.player_size*2,HEIGHT//2-self.player_size,self.player_size,Color.SQUID_TEAL,num_label=random.randint(1,500)) for i in range(self.num_players)
+            Player(WIDTH-50-i*self.player_size*2,HEIGHT//2-self.player_size,self.player_size,Color.get_random_color_from_base(Color.SQUID_TEAL),num_label=random.randint(1,500)) for i in range(self.num_players)
         ]
 
         self.rope = Block(50,HEIGHT//2-2*self.player_size+2,700,2,Color.SAND)
@@ -223,23 +250,23 @@ class TugOfWar(GameHandler):
 
     def render_help(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
-        helper.render_text(frame,"How to play: Tug Of War",WIDTH/2,HEIGHT/12,font_size=40)
+        helper.render_text(frame,"How to play: Tug Of War",WIDTH/2,50,font_size=40,underline=True)
         helper.render_text(
             frame, "Objective: Pull the opposing team off the platform!",
             WIDTH // 2, HEIGHT // 6, font_size=22, color=Color.WHITE
         )
         helper.render_image(
             frame, "./assets/img/tugofwar/demo.png",
-            WIDTH // 2, HEIGHT // 2.1, [int(500 / 2.25), int(375 / 2.25)]
+            WIDTH // 2, HEIGHT // 1.9, [int(500 / 1.9), int(375 / 1.9)]
         )
-        helper.render_text(
-            frame, "Drag your mouse rightwards to pull your side of the team!",
-            WIDTH // 2, HEIGHT // 1.29, font_size=20, color=Color.WHITE
-        )
-        helper.render_text(
-            frame, "Keep your rhythm steady or you'll lose grip.",
-            WIDTH // 2, HEIGHT // 1.22, font_size=20, color=Color.WHITE
-        )
+        # helper.render_text(
+        #     frame, "Drag your mouse rightwards to pull your side of the team!",
+        #     WIDTH // 2, HEIGHT // 1.29, font_size=20, color=Color.WHITE
+        # )
+        # helper.render_text(
+        #     frame, "Keep your rhythm steady or you'll lose grip.",
+        #     WIDTH // 2, HEIGHT // 1.22, font_size=20, color=Color.WHITE
+        # )
 
         self.help_start_btn.render(frame)
         self.help_back_btn.render(frame)
@@ -249,7 +276,7 @@ class TugOfWar(GameHandler):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
         helper.render_text(frame,"Eliminated :(",WIDTH/2,HEIGHT/3,font_size=40)
         helper.render_text(frame,"The good thing is, you can revive yourself",WIDTH/2,HEIGHT/2.4,font_size=20)
-        helper.render_text(frame," by clicking the 'Go back' button! :)",WIDTH/2,HEIGHT/2.1,font_size=20)
+        helper.render_text(frame," by clicking the 'Back to Levels' button! :)",WIDTH/2,HEIGHT/2.1,font_size=20)
         self.return_lvls_btn.render(frame)
     def render_success(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))

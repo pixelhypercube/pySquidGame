@@ -9,7 +9,7 @@ class Helper:
     def __init__(self):
         self.sounds = {}
         self.channels = {}
-    def render_text(self,frame,content,pos_x,pos_y,font_size=20,color=Color.WHITE):
+    def render_text(self,frame,content,pos_x,pos_y,font_size=20,color=Color.WHITE,align="center", underline=False):
         font = pg.font.Font("./assets/fonts/Inter-SemiBold.ttf",font_size)
         sentences = content.split("\n")
         x = pos_x
@@ -17,9 +17,30 @@ class Helper:
         for line in sentences:
             text = font.render(line,True,color)
             text_width,text_height = text.get_size()
-            textRect = text.get_rect()
-            textRect.center = (x,y-(len(sentences)-1)*text_height/2)
-            frame.blit(text,textRect)
+            text_rect = text.get_rect()
+            
+            if align == "center":
+                text_rect.center = (x, y - (len(sentences) - 1) * text_height / 2)
+            elif align == "left":
+                text_rect.midleft = (x, y - (len(sentences) - 1) * text_height / 2)
+            elif align == "right":
+                text_rect.midright = (x, y - (len(sentences) - 1) * text_height / 2)
+
+            frame.blit(text,text_rect)
+
+            if underline:
+                underline_y = text_rect.bottom
+                if align == "center":
+                    start_x = text_rect.left
+                    end_x = text_rect.right
+                elif align == "left":
+                    start_x = text_rect.left
+                    end_x = text_rect.left + text_width
+                elif align == "right":
+                    start_x = text_rect.right - text_width
+                    end_x = text_rect.right
+                pg.draw.line(frame, color, (start_x, underline_y), (end_x, underline_y), 2)
+
             y+=text_height
 
     def render_image(self,frame,path,pos_x,pos_y,size=None):

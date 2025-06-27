@@ -12,11 +12,12 @@ from screens.TugOfWar import TugOfWar
 from screens.Marbles import Marbles
 from screens.GlassSteppingStones import GlassSteppingStones
 from screens.SquidGame import SquidGame
-
+from screens.Credits import Credits
 current_screen = "home"
 screens = {
     "home":Home(),
     "levels":Levels(),
+    "credits":Credits(),
     "red_light_green_light": RedLightGreenLight(),
     "honey_comb": HoneyComb(),
     "tug_of_war": TugOfWar(),
@@ -28,6 +29,11 @@ screens = {
 # The game
 pg.init()
 pg.font.init()
+
+pg.display.set_caption("pySquidGame")
+icon = pg.image.load('./assets/img/icon.png')
+pg.display.set_icon(icon)
+
 frame = pg.display.set_mode([WIDTH,HEIGHT])
 running = True
 

@@ -40,7 +40,7 @@ class Levels(GameHandler):
     def render(self, frame, mouse_x, mouse_y):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
         helper.render_text(frame,"Choose a stage!",WIDTH/2,HEIGHT/5,font_size=40)
-        helper.render_text(frame,"Press 'Esc' or 'P' to pause",WIDTH/2,220,font_size=15)
+        # helper.render_text(frame,"Press 'Esc' or 'P' to pause",WIDTH/2,220,font_size=15)
         self.back_btn.render(frame)
         for btn in self.lvl_num_btns:
             btn.render(frame)
