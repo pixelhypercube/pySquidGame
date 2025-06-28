@@ -145,16 +145,14 @@ class Marbles(GameHandler):
         self.exit_btn.visible = False
         self.return_lvls_btn.visible = False
 
-    def toggle_game_state(self,frame,state):
+    def toggle_game_state(self,state):
         self.game_state = state
         if state==1:
             self.paused = True
             self.return_lvls_btn.visible = True
-            self.render_success(frame)
         elif state==2:
             self.paused = True
             self.return_lvls_btn.visible = True
-            self.render_fail(frame)
         elif state==0:
             self.paused = False
             self.help_back_btn.visible = False
@@ -162,11 +160,9 @@ class Marbles(GameHandler):
         elif state==3:
             self.paused = True
             self.return_lvls_btn.visible = True
-            self.render_draw(frame)
         elif state==-1:
             self.paused = True
             self.return_lvls_btn.visible = False
-            self.render_help(frame)
     
     def render(self,frame,mouse_x,mouse_y):
         if not self.paused:
@@ -258,11 +254,11 @@ class Marbles(GameHandler):
 
             if self.marbles_left<=0 and marble_max_vel<=0.1 and self.in_game_frame_count>self.cooldown_frame:
                 if player_marbles_in>computer_marbles_in:
-                    self.toggle_game_state(frame,1)
+                    self.toggle_game_state(1)
                 elif player_marbles_in==computer_marbles_in:
-                    self.toggle_game_state(frame,3)
+                    self.toggle_game_state(3)
                 else:
-                    self.toggle_game_state(frame,2)
+                    self.toggle_game_state(2)
                     helper.play_sound("./assets/sounds/gunShotLong.wav")
 
             self.render_timer(10,10,frame,self.time_left)
@@ -294,7 +290,7 @@ class Marbles(GameHandler):
             
             # game over:
             if self.time_left<=0:
-                self.toggle_game_state(frame,2)
+                self.toggle_game_state(2)
                 helper.play_sound("./assets/sounds/gunShotLong.wav")
             
             helper.render_text(frame,"Press 'Esc' or 'P' to pause",WIDTH-20,HEIGHT-20,font_size=18,color=Color.BLACK,align="right")
@@ -411,7 +407,7 @@ class Marbles(GameHandler):
         # )
         self.help_start_btn.render(frame)
         self.help_back_btn.render(frame)
-        self.help_start_btn.function = lambda: self.toggle_game_state(frame,0) 
+        self.help_start_btn.function = lambda: self.toggle_game_state(0) 
     def render_paused(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
         helper.render_text(frame,"Paused",WIDTH/2,HEIGHT/3,font_size=40)

@@ -128,9 +128,9 @@ class TugOfWar(GameHandler):
             fall_left = self.platform_left.pos[0] + self.platform_left.dim[0]
             fall_right = self.platform_right.pos[0]
             if rightmost_left_player.pos[0]>fall_left:
-                self.toggle_game_state(frame,1)
+                self.toggle_game_state(1)
             elif leftmost_right_player.pos[0]<fall_right:
-                self.toggle_game_state(frame,2)
+                self.toggle_game_state(2)
 
             self.render_timer(10,10,frame,self.time_left)
 
@@ -143,7 +143,7 @@ class TugOfWar(GameHandler):
             
             # game over:
             if self.time_left<=0:
-                self.toggle_game_state(frame,2)
+                self.toggle_game_state(2)
 
             helper.render_text(frame,"Press 'Esc' or 'P' to pause",WIDTH-20,HEIGHT-20,font_size=18,color=Color.WHITE,align="right")
             self.in_game_frame_count += 1
@@ -229,16 +229,14 @@ class TugOfWar(GameHandler):
         self.exit_btn.visible = False
         self.return_lvls_btn.visible = False
 
-    def toggle_game_state(self,frame,state):
+    def toggle_game_state(self,state):
         self.game_state = state
         if state==1:
             self.paused = True
             self.return_lvls_btn.visible = True
-            self.render_success(frame)
         elif state==2:
             self.paused = True
             self.return_lvls_btn.visible = True
-            self.render_fail(frame)
         elif state==0:
             self.paused = False
             self.help_back_btn.visible = False
@@ -246,7 +244,6 @@ class TugOfWar(GameHandler):
         elif state==-1:
             self.paused = True
             self.return_lvls_btn.visible = False
-            self.render_help(frame)
 
     def render_help(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
@@ -270,7 +267,7 @@ class TugOfWar(GameHandler):
 
         self.help_start_btn.render(frame)
         self.help_back_btn.render(frame)
-        self.help_start_btn.function = lambda: self.toggle_game_state(frame,0) 
+        self.help_start_btn.function = lambda: self.toggle_game_state(0) 
 
     def render_fail(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))

@@ -79,7 +79,7 @@ class Helper:
         frame.blit(image,imageRect)
 
     def play_music(self,path):
-        pg.mixer.music.load(path)
+        pg.mixer.music.load(resource_path(clean_path(path)))
         pg.mixer.music.play(1)
 
     def play_sound(self,path,volume=1,continuous=False):

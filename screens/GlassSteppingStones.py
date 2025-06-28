@@ -145,9 +145,9 @@ class GlassSteppingStones(GameHandler):
         if not self.paused:
             if self.is_game_win is not None:
                 if self.is_game_win:
-                    self.toggle_game_state(frame,1)
+                    self.toggle_game_state(1)
                 else:
-                    self.toggle_game_state(frame,2)
+                    self.toggle_game_state(2)
 
             frame.fill(self.bg_color)
             Circle(0,HEIGHT//2,100,Color.SQUID_PINK,stroke_color=Color.SQUID_LIGHT_TEAL,stroke_thickness=2).render(frame)
@@ -206,7 +206,7 @@ class GlassSteppingStones(GameHandler):
 
             # game over:
             if self.time_left<=0:
-                self.toggle_game_state(frame,2)
+                self.toggle_game_state(2)
 
             helper.render_text(frame,"Press 'Esc' or 'P' to pause",WIDTH-20,HEIGHT-20,font_size=18,color=Color.WHITE,align="right")
             self.in_game_frame_count += 1
@@ -376,16 +376,14 @@ class GlassSteppingStones(GameHandler):
                             self.next_wait_cooldown = self.in_game_frame_count + self.wait_cooldown
                         
 
-    def toggle_game_state(self,frame,state):
+    def toggle_game_state(self,state):
         self.game_state = state
         if state==1:
             self.paused = True
             self.return_lvls_btn.visible = True
-            self.render_success(frame)
         elif state==2:
             self.paused = True
             self.return_lvls_btn.visible = True
-            self.render_fail(frame)
         elif state==0:
             self.paused = False
             self.help_back_btn.visible = False
@@ -393,7 +391,6 @@ class GlassSteppingStones(GameHandler):
         elif state==-1:
             self.paused = True
             self.return_lvls_btn.visible = False
-            self.render_help(frame)
 
     def render_help(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))
@@ -430,7 +427,7 @@ class GlassSteppingStones(GameHandler):
 
         self.help_start_btn.render(frame)
         self.help_back_btn.render(frame)
-        self.help_start_btn.function = lambda: self.toggle_game_state(frame,0) 
+        self.help_start_btn.function = lambda: self.toggle_game_state(0) 
 
     def render_fail(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))

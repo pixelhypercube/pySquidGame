@@ -192,11 +192,11 @@ class SquidGame(GameHandler):
             if self.player_offender.last_area not in ["B","D_Bridge"] and self.player_offender.area=="D" or \
                 self.player_offender.last_area=="A" and self.player_offender.area=="C" or\
                 self.player_offender.last_area=="D" and self.player_offender.area=="None":
-                self.toggle_game_state(frame,2)
+                self.toggle_game_state(2)
             else:
                 # offender win
                 if self.player_offender.last_area=="D" and self.player_offender.area=="C":
-                    self.toggle_game_state(frame,1)
+                    self.toggle_game_state(1)
 
             # DEFENDER
 
@@ -214,7 +214,7 @@ class SquidGame(GameHandler):
             else:
                 self.player_defender.is_hopping = True
             if self.player_defender.area in ["None","A","C"] and self.player_defender.last_area != "B":
-                self.toggle_game_state(frame,1)
+                self.toggle_game_state(1)
         
             # helper.render_text(frame, f"{str(self.player_offender.last_area)},{str(self.player_offender.area)} {str(self.player_defender.last_area)},{str(self.player_defender.area)}", 100, 100, color=Color.WHITE, font_size=20)
 
@@ -319,7 +319,7 @@ class SquidGame(GameHandler):
 
             # game over:
             if self.time_left<=0:
-                self.toggle_game_state(frame,2)
+                self.toggle_game_state(2)
 
             helper.render_text(frame,"Press 'Esc' or 'P' to pause",WIDTH-20,HEIGHT-20,font_size=18,color=Color.WHITE,align="right")
             self.in_game_frame_count += 1
@@ -404,16 +404,14 @@ class SquidGame(GameHandler):
         self.return_lvls_btn.visible = False
         self.toggle_labels.visible = False
     
-    def toggle_game_state(self,frame,state):
+    def toggle_game_state(self,state):
         self.game_state = state
         if state==1:
             self.paused = True
             self.return_lvls_btn.visible = True
-            self.render_success(frame)
         elif state==2:
             self.paused = True
             self.return_lvls_btn.visible = True
-            self.render_fail(frame)
         elif state==0:
             self.paused = False
             self.help_back_btn.visible = False
@@ -422,7 +420,6 @@ class SquidGame(GameHandler):
         elif state==-1:
             self.paused = True
             self.return_lvls_btn.visible = False
-            self.render_help(frame)
     
     def render_help(self,frame):
         pg.draw.rect(frame, Color.SQUID_GREY, (0, 0, WIDTH, HEIGHT))
@@ -519,7 +516,7 @@ class SquidGame(GameHandler):
         self.help_back_btn.render(frame)
         if self.help_page == 3:
             self.help_start_btn.render(frame)
-            self.help_start_btn.function = lambda: self.toggle_game_state(frame, 0)
+            self.help_start_btn.function = lambda: self.toggle_game_state( 0)
 
     def render_fail(self,frame):
         pg.draw.rect(frame,Color.SQUID_GREY,(0,0,WIDTH,HEIGHT))

@@ -35,7 +35,7 @@ class Credits(GameHandler):
             helper.render_text(frame, line, WIDTH // 2, HEIGHT // 3 + i * 40, font_size=22)
         
         # Version
-        helper.render_text(frame, "Version 1.0", WIDTH // 2, HEIGHT - 30, font_size=18)
+        helper.render_text(frame, "Version 1.0.1", WIDTH // 2, HEIGHT - 30, font_size=18)
 
         # Buttons
         self.back_btn.render(frame)

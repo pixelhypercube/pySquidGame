@@ -82,7 +82,7 @@ class RedLightGreenLight(GameHandler):
         self.is_red_light = False
         self.interval_duration_left = self.red_green_interval * 60
         self.players.clear()
-        self.gen_players(50)
+        self.gen_players(25)
         self.player.set_pos(WIDTH/2, HEIGHT/1.1)
         self.wall_blocks = [
             Block(0,0,WIDTH,self.wall_thickness,Color.SKY_BLUE),
@@ -190,16 +190,14 @@ class RedLightGreenLight(GameHandler):
         self.restart_btn.render(frame)
         self.exit_btn.render(frame)
 
-    def toggle_game_state(self,frame,state):
+    def toggle_game_state(self,state):
         self.game_state = state
         if state==1:
             self.paused = True
             self.return_lvls_btn.visible = True
-            self.render_success(frame)
         elif state==2:
             self.paused = True
             self.return_lvls_btn.visible = True
-            self.render_fail(frame)
         elif state==0:
             self.paused = False
             self.help_back_btn.visible = False
@@ -207,9 +205,17 @@ class RedLightGreenLight(GameHandler):
         elif state==-1:
             self.paused = True
             self.return_lvls_btn.visible = False
-            self.render_help(frame)
-
+    
     def attack_player(self,player_1,player_2):
+        if self.is_red_light or (self.preparation_time * 60 - self.in_game_frame_count > 0):
+            if (player_1 == self.player or player_2 == self.player):
+                self.toggle_game_state(2)
+                helper.play_sound("./assets/sounds/gunShotLong.wav")
+            else:
+                self.players.remove(player_1)
+                self.players.remove(player_2)
+
+
         p1_x,p1_y = player_1.pos
         p2_x,p2_y = player_2.pos
         angle = math.atan2(p2_y-p1_y,p2_x-p1_x)
@@ -235,7 +241,7 @@ class RedLightGreenLight(GameHandler):
 
             helper.render_image(
                 frame,
-                self.assets["doll_back"] if (self.is_red_light or (self.preparation_time * 60 - self.in_game_frame_count > 0)) else self.assets["doll_front"],
+                self.assets["doll_front"] if (self.is_red_light or (self.preparation_time * 60 - self.in_game_frame_count > 0)) else self.assets["doll_back"],
                 WIDTH//2,
                 50,
                 size=(40,40)
@@ -280,8 +286,8 @@ class RedLightGreenLight(GameHandler):
 
                 # collision with other players
                 nearest_player = player.detect_nearest_circle(self.players)
-                # if nearest_player and player.detect_circle_contact(nearest_player.pos):
-                #     player.contact_circle(nearest_player)
+                if nearest_player and player.detect_circle_contact(nearest_player.pos):
+                    player.contact_circle(nearest_player)
                 
                 # move or freeze
                 if in_preparation:
@@ -297,7 +303,7 @@ class RedLightGreenLight(GameHandler):
                         if random.random()<0.05:
                             player.boost()
                         
-                        if random.uniform(0,1)<0.002:
+                        if random.uniform(0,1)<0.005:
                             if player.get_other_circle_dist(nearest_player)<=30:
                                 self.attack_player(player,nearest_player)
                 else:
@@ -327,17 +333,17 @@ class RedLightGreenLight(GameHandler):
             else:
 
                 if self.player.pos[1] <= self.finish_y and not self.is_red_light:
-                    self.toggle_game_state(frame,1)
+                    self.toggle_game_state(1)
                 elif self.cooldown_time > self.red_light_cooldown*60 and self.player.get_scalar_vel()>self.max_shot_vel:
                     helper.play_sound("./assets/sounds/gunShotLong.wav")
-                    self.toggle_game_state(frame,2)
+                    self.toggle_game_state(2)
                 
                 self.time_left-=1
                 if self.interval_duration_left<=0: self.toggle_light()
                 self.interval_duration_left -= 1
 
                 if self.is_red_light: self.cooldown_time += 1
-                if self.time_left<=0: self.toggle_game_state(frame,2)
+                if self.time_left<=0: self.toggle_game_state(2)
 
 
             helper.render_text(frame,"Press 'Esc' or 'P' to pause",WIDTH-20,HEIGHT-20,font_size=18,color=Color.BLACK,align="right")
@@ -437,4 +443,4 @@ class RedLightGreenLight(GameHandler):
         self.help_prev_btn.render(frame)
         self.help_next_btn.render(frame)
         self.help_start_btn.render(frame)
-        self.help_start_btn.function = lambda: self.toggle_game_state(frame,0) 
+        self.help_start_btn.function = lambda: self.toggle_game_state(0) 

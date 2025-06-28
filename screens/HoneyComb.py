@@ -249,16 +249,14 @@ class HoneyComb(GameHandler):
         self.exit_btn.visible = False
         self.return_lvls_btn.visible = False
 
-    def toggle_game_state(self,frame,state):
+    def toggle_game_state(self,state):
         self.game_state = state
         if state==1:
             self.paused = True
             self.return_lvls_btn.visible = True
-            self.render_success(frame)
         elif state==2:
             self.paused = True
             self.return_lvls_btn.visible = True
-            self.render_fail(frame)
         elif state==0:
             self.paused = False
             self.help_back_btn.visible = False
@@ -266,7 +264,6 @@ class HoneyComb(GameHandler):
         elif state==-1:
             self.paused = True
             self.return_lvls_btn.visible = False
-            self.render_help(frame)
 
     def toggle_paused(self):
         self.paused = not self.paused
@@ -404,10 +401,10 @@ class HoneyComb(GameHandler):
             accuracy = (self.calc_accuracy()*100)//100 
             if self.furthest_needle_point_dist>=self.dalgona_size and len(self.needle_points) >= self.min_points_required:
                 if accuracy < 60:
-                    self.toggle_game_state(frame, 2)
+                    self.toggle_game_state( 2)
                     helper.play_sound("./assets/sounds/biscuitBreak.wav")
                 elif accuracy >= 90:
-                    self.toggle_game_state(frame, 1)
+                    self.toggle_game_state( 1)
                     helper.play_sound("./assets/sounds/biscuitBreak.wav")
 
             self.render_timer(10,10,frame,self.time_left)
@@ -420,7 +417,7 @@ class HoneyComb(GameHandler):
 
             # game over:
             if self.time_left<=0 or self.mouse_speed>=10:
-                self.toggle_game_state(frame,2)
+                self.toggle_game_state(2)
                 helper.play_sound("./assets/sounds/gunShotLong.wav")
 
             helper.render_text(frame,"Press 'Esc' or 'P' to pause",WIDTH-20,HEIGHT-20,font_size=18,color=Color.BLACK,align="right")
@@ -472,4 +469,4 @@ class HoneyComb(GameHandler):
 
         self.help_start_btn.render(frame)
         self.help_back_btn.render(frame)
-        self.help_start_btn.function = lambda: self.toggle_game_state(frame,0) 
+        self.help_start_btn.function = lambda: self.toggle_game_state(0) 
