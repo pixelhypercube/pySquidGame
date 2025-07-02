@@ -29,6 +29,7 @@ class Levels(GameHandler):
                 self.lvl_num_btns.append(Button((i-3)*200,(HEIGHT/2)+160,90,50,content=self.game_names[i-1],next_screen=self.game_image_names[i-1],function=None,image_path="./assets/img/levels/"+self.game_image_names[i-1]+".png"))
             else:
                 self.lvl_num_btns.append(Button((i-3)*200,(HEIGHT/2)+160,90,50,content=self.game_names[i-1],next_screen=self.game_image_names[i-1],function=None,image_path="./assets/img/levels/"+self.game_image_names[i-1]+".png"))
+        self.lvl_num_btns.append(Button(WIDTH//2,HEIGHT//2-70,90,25,"Ddakji",next_screen="ddakji"))
         self.buttons = [self.back_btn] + self.lvl_num_btns
 
     def keydown_listener(self, event):

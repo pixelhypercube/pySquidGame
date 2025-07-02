@@ -13,6 +13,7 @@ from screens.Marbles import Marbles
 from screens.GlassSteppingStones import GlassSteppingStones
 from screens.SquidGame import SquidGame
 from screens.Credits import Credits
+from screens.DdakjiGame import DdakjiGame
 import os
 import sys
 def resource_path(relative_path):
@@ -30,6 +31,7 @@ screens = {
     "home":Home(),
     "levels":Levels(),
     "credits":Credits(),
+    "ddakji":DdakjiGame(),
     "red_light_green_light": RedLightGreenLight(),
     "honey_comb": HoneyComb(),
     "tug_of_war": TugOfWar(),
