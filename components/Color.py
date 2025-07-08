@@ -3,6 +3,7 @@ import random
 class Color:
     WHITE = (255,255,255)
     GREY = (127,127,127)
+    LIGHT_GREY = (160,160,160)
     DARK_GREY = (90,90,90)
     DARK_DARK_GREY = (60,60,60)
     SQUID_PURPLE = (146,31,129)
@@ -26,6 +27,7 @@ class Color:
     HONEYCOMB_YELLOW = (255,200,0)
     HONEYCOMB_DARK_YELLOW = (127,100,0)
     STONE = (93,110,118)
+    CARD_SAND = (202,170,128)
 
     def get_color(r,g,b):
         return (r,g,b)
@@ -35,4 +37,9 @@ class Color:
         r = (base_color[0] + random.randint(-20, 20)) % 256
         g = (base_color[1] + random.randint(-20, 20)) % 256
         b = (base_color[2] + random.randint(-20, 20)) % 256
+        return (r, g, b)
+    def adj_color_brightness(base_color,percentage):
+        r = min(255, base_color[0] * percentage)
+        g = min(255, base_color[1] * percentage)
+        b = min(255, base_color[2] * percentage)
         return (r, g, b)

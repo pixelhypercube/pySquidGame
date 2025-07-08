@@ -7,7 +7,7 @@ import time
 helper = Helper()
 
 class Button:
-    def __init__(self,x,y,w,h,content="",font_size=20,color=Color.SQUID_PURPLE,hover_color=Color.SQUID_PURPLE2,clicked_color=Color.SQUID_PINK,text_color=Color.WHITE,next_screen=None,function=lambda:None,image_path=None,image_mode="fill",visible=True):
+    def __init__(self,x,y,w,h,content="",font_size=20,color=Color.CARD_SAND,hover_color=Color.adj_color_brightness(Color.CARD_SAND,0.75),clicked_color=Color.SQUID_PINK,text_color=Color.BLACK,next_screen=None,function=lambda:None,image_path=None,image_mode="fill",visible=True,border_weight=0,border_radius=8):
         self.x = x
         self.y = y
         self.w = w
@@ -26,6 +26,9 @@ class Button:
         self.function = function
         self.image_path = image_path
         self.image_mode = image_mode
+
+        self.border_weight = border_weight
+        self.border_radius = border_radius
 
         self.visible = visible
         self.last_click_time = 0
@@ -61,8 +64,9 @@ class Button:
         return current_screen
     def render(self,frame):
         if self.visible:
-            pg.draw.rect(frame,Color.BLACK,(self.x-self.w-3,self.y-self.h-3,self.w*2+6,self.h*2+6))
-            pg.draw.rect(frame,self.current_color,(self.x-self.w,self.y-self.h,self.w*2,self.h*2))
+            pg.draw.rect(frame,Color.BLACK,(self.x-self.w-self.border_weight,self.y-self.h-self.border_weight,self.w*2+self.border_weight*2,self.h*2+self.border_weight*2),border_radius=self.border_radius)
+            pg.draw.rect(frame,self.current_color,(self.x-self.w,self.y-self.h,self.w*2,self.h*2),border_radius=self.border_radius)
+            
             if self.image_path is not None:
                 if self.image_mode=="fill":
                     helper.render_image(frame,self.image_path,self.x,self.y,size=[self.w,self.h])

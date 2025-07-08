@@ -19,3 +19,11 @@ class Block:
         o_x,o_y = self.pos
         w,h = self.dim
         return o_x <= x <= o_x + w and o_y <= y <= o_y + h
+    def is_intersect(self,other):
+        x,y = self.pos
+        w,h = self.dim
+
+        ox,oy = other.pos
+        ow,oh = other.dim
+
+        return x<ox+ow and x+w>ox and y<oy+oh and y+h>oy

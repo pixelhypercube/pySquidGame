@@ -12,7 +12,7 @@ from scipy.ndimage import gaussian_filter
 
 def resource_path(relative_path):
     try:
-        base_path = sys._MEIPASS  # PyInstaller sets this
+        base_path = sys._MEIPASS
     except AttributeError:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
@@ -35,13 +35,14 @@ class Helper:
         self.sounds = {}
         self.channels = {}
     def render_text(self,frame,content,pos_x,pos_y,font_size=20,color=Color.WHITE,align="center", underline=False):
-        font = pg.font.Font(resource_path("assets/fonts/Inter-SemiBold.ttf"),font_size)
+        font = pg.font.Font(resource_path("assets/fonts/Nunito-Bold.ttf"),font_size)
         sentences = content.split("\n")
         x = pos_x
         y = pos_y
         for line in sentences:
             text = font.render(line,True,color)
             text_width,text_height = text.get_size()
+            text_height/=1.25
             text_rect = text.get_rect()
             
             if align == "center":
