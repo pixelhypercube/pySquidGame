@@ -15,12 +15,17 @@ class Ddakji(Block):
         self.dz = 0 # velocity of altitude
         self.gravity = 0.1
 
+        self.original_pos = self.pos
+
         self.angle = 0
         self.d_angle = 0
         self.is_grabbing = False
 
         self.health = health
         self.max_health = max_health
+
+        self.rotation_state = (self.angle//1)%2
+        self.prev_rotation_state = self.rotation_state
 
         # self.roll = 0
         # self.yaw = 0
@@ -36,7 +41,7 @@ class Ddakji(Block):
         pg.draw.rect(frame,self.color,(x-self.z//2,y-self.z//2,w+self.z,h+self.z))
         pg.draw.rect(frame,Color.BLACK,(x-self.z//2,y-self.z//2,w+self.z,h+self.z),width=self.stroke_thickness)
         
-        if (self.angle//1)%2==0:
+        if self.rotation_state==0:
             pg.draw.line(frame,Color.BLACK,(x-self.z//2,y-self.z//2),(x+w+self.z//2,y+h+self.z//2),width=self.stroke_thickness)
             pg.draw.line(frame,Color.BLACK,(x+w+self.z//2,y-self.z//2),(x-self.z//2,y+h+self.z//2),width=self.stroke_thickness)
         
@@ -51,6 +56,9 @@ class Ddakji(Block):
             else:
                 self.z = 0
                 self.angle = round(self.angle)
+                self.vel = [0,0]
+                self.dz = 0
+            self.rotation_state = (self.angle//1)%2
         else:
             mouse_x,mouse_y = pg.mouse.get_pos()
             self.grab(mouse_x,mouse_y,grab_height=50)
