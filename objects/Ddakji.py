@@ -2,11 +2,13 @@ from components.Color import Color
 import pygame as pg
 from objects.Block import Block
 from components.Helper import Helper
+from Settings import WIDTH, HEIGHT
+import random
 
 helper = Helper()
 
 class Ddakji(Block):
-    def __init__(self, x, y, w, h, color, stroke_thickness=0, stroke_color=Color.BLACK,health=10,max_health=10):
+    def __init__(self, x, y, w, h, color, stroke_thickness=0, stroke_color=Color.BLACK,health=10,max_health=10,highlighted_color=Color.SQUID_PINK):
         super().__init__(x, y, w, h, color, stroke_thickness, stroke_color)
         self.pos = [x,y]
         self.vel = [0,0]
@@ -15,7 +17,7 @@ class Ddakji(Block):
         self.dz = 0 # velocity of altitude
         self.gravity = 0.1
 
-        self.original_pos = self.pos
+        self.original_pos = [random.randint(WIDTH//2-40,WIDTH//2+40),random.randint(HEIGHT//2-40,HEIGHT//2+40)]
 
         self.angle = 0
         self.d_angle = 0
@@ -26,6 +28,10 @@ class Ddakji(Block):
 
         self.rotation_state = (self.angle//1)%2
         self.prev_rotation_state = self.rotation_state
+
+        self.is_selected = False
+        self.highlighted_color = highlighted_color
+        self.current_highlighted_color = self.highlighted_color
 
         # self.roll = 0
         # self.yaw = 0
@@ -39,12 +45,11 @@ class Ddakji(Block):
         frame.blit(shadow_surface,(x+self.z,y+self.z))
 
         pg.draw.rect(frame,self.color,(x-self.z//2,y-self.z//2,w+self.z,h+self.z))
-        pg.draw.rect(frame,Color.BLACK,(x-self.z//2,y-self.z//2,w+self.z,h+self.z),width=self.stroke_thickness)
-        
         if self.rotation_state==0:
             pg.draw.line(frame,Color.BLACK,(x-self.z//2,y-self.z//2),(x+w+self.z//2,y+h+self.z//2),width=self.stroke_thickness)
             pg.draw.line(frame,Color.BLACK,(x+w+self.z//2,y-self.z//2),(x-self.z//2,y+h+self.z//2),width=self.stroke_thickness)
-        
+        pg.draw.rect(frame,self.current_highlighted_color if self.is_selected else Color.BLACK,(x-self.z//2,y-self.z//2,w+self.z,h+self.z),width=self.stroke_thickness)
+
         if not self.is_grabbing:
             if self.z > 0:
                 self.pos[0] += self.vel[0]
