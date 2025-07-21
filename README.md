@@ -20,9 +20,25 @@ In the original series, players must survive 6 deadly stages:
 In **pySquidGame**, you're free to hop into any game mode directly — no need to finish the previous one!
 
 
+### 🀄 Bonus Game: Ddakji
+A nostalgic twist from the very beginning of Squid Game — Ddakji is now playable in pySquidGame as a bonus mode!
+
+In this high-energy mini-game, your goal is to flip your opponent’s folded paper tile (ddakji) by slamming yours onto it with the right angle, force, and timing.
+
+Perfect your throw, master the spin, and dominate the playground!
+
+##### 🎮 How to Play:
+Click or press a key to launch your ddakji.
+
+Aim for a clean direct hit to flip the opponent's tile.
+
+Watch out for bounce angles and edge hits — physics matter!
+
+More features like sound effects, impact-based animations, and score tracking are included for extra fun.
+
 ### 📥 Download
 
-➡️ [Download v1.0 Release](https://github.com/pixelhypercube/pySquidGame/releases/tag/v1.0)
+➡️ [Download v1.1.0 Release](https://github.com/pixelhypercube/pySquidGame/releases/tag/v1.1.0)
 
 ---
 
