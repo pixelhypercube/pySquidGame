@@ -31,16 +31,25 @@ class DdakjiGame(GameHandler):
 
         self.is_grabbing = False
         
-        self.player_1 = Ddakji(WIDTH//2-30,HEIGHT//2,50,50,Color.SQUID_PURPLE2,stroke_thickness=3)
-        self.player_2 = Ddakji(WIDTH//2+30,HEIGHT//2,50,50,Color.SQUID_TEAL,stroke_thickness=3)
+        self.player_1 = Ddakji(WIDTH//2-30,HEIGHT//2,50,50,Color.LIGHT_BLUE,stroke_thickness=3,text_overlay="P1")
+        self.player_2 = Ddakji(WIDTH//2+30,HEIGHT//2,50,50,Color.CRIMSON,stroke_thickness=3,text_overlay="P2")
 
         self.in_game_frame_count = 0
         self.move_cooldown = 40
         self.next_move_cooldown = self.in_game_frame_count + self.move_cooldown
     
+        self.tile_colors = [
+            Color.SQUID_GREY, Color.LIGHT_GREY, Color.SQUID_PINK, Color.SQUID_TEAL
+        ]
+        self.tile_color_map = {}
+
+        self.num_throws = 0
+
+        # random.shuffle(self.tile_colors)
+
     def restart_game(self):
-        self.player_1 = Ddakji(WIDTH//2-30,HEIGHT//2,50,50,Color.SQUID_PURPLE2,stroke_thickness=3)
-        self.player_2 = Ddakji(WIDTH//2+30,HEIGHT//2,50,50,Color.SQUID_TEAL,stroke_thickness=3)
+        self.player_1 = Ddakji(WIDTH//2-30,HEIGHT//2,50,50,Color.LIGHT_BLUE,stroke_thickness=3,text_overlay="P1")
+        self.player_2 = Ddakji(WIDTH//2+30,HEIGHT//2,50,50,Color.CRIMSON,stroke_thickness=3,text_overlay="P2")
 
         self.game_state = -1
 
@@ -58,6 +67,10 @@ class DdakjiGame(GameHandler):
         self.restart_btn.visible = False
         self.exit_btn.visible = False
         self.return_lvls_btn.visible = False
+
+        self.tile_color_map = {}
+
+        self.num_throws = 0
 
     def toggle_game_state(self,state):
         self.game_state = state
@@ -87,48 +100,77 @@ class DdakjiGame(GameHandler):
         helper.render_text(frame,left_text,x-w//2-5,y+h//2,color=Color.BLACK,align="right",font_size=18)
         helper.render_text(frame,right_text,x+w//2+5,y+h//2,color=Color.BLACK,align="left",font_size=18)
 
+    def render_tiles(self,frame,tile_width=50,tile_height=50,bevel_height=2):
+        for i in range(0,HEIGHT,tile_height):
+            for j in range(0,WIDTH,tile_width):
+                tile_key = (i, j)
+                if tile_key not in self.tile_color_map:
+                    self.tile_color_map[tile_key] = self.tile_colors[random.randint(0, len(self.tile_colors) - 1)]
+
+
+                base_color = self.tile_color_map[tile_key]
+                pg.draw.rect(frame, Color.apply_color_filter(base_color, (200,200,200), 0.85), (j,i,tile_width,tile_height))
+
+                pg.draw.line(frame, Color.apply_color_filter(base_color, Color.WHITE, 0.85), (j,i), (j+tile_width-bevel_height,i),2)
+                pg.draw.line(frame, Color.apply_color_filter(base_color, Color.WHITE, 0.85), (j,i), (j,i+tile_height-bevel_height),2)
+
+                pg.draw.line(frame, Color.apply_color_filter(base_color, Color.GREY, 0.55), (j,i+tile_height-bevel_height), (j+tile_width-bevel_height,i+tile_height-bevel_height),2)
+                pg.draw.line(frame, Color.apply_color_filter(base_color, Color.GREY, 0.55), (j+tile_width-bevel_height,i), (j+tile_width-bevel_height,i+tile_height-bevel_height),2)
+
+                pg.draw.rect(frame, Color.GREY, (j,i,tile_width,tile_height), width=1)
+
     def render(self,frame,mouse_x,mouse_y):
         if not self.paused:
             frame.fill(Color.LIGHT_GREY)
 
-            for i in range(0,HEIGHT,25):
-                for j in range(0,WIDTH,25):
-                    if (i+j)//25 % 2 == 0:
-                        pg.draw.rect(frame,Color.adj_color_brightness(Color.LIGHT_GREY,0.9),(j,i,25,25))
+            self.render_tiles(frame)
             
-            helper.render_text(frame,f"Player {self.player_turn}'s Turn!",WIDTH//2,HEIGHT//4,font_size=32,color=Color.BLACK)
-
             # order of player's turn
             if self.player_turn==1:
                 self.player_2.render(frame)
                 self.player_1.render(frame)
-
-                self.player_1.current_highlighted_color = Color.adj_color_brightness(self.player_1.highlighted_color,abs((self.in_game_frame_count%100)-50)*0.05)
+                self.player_1.current_highlighted_color = Color.adj_color_brightness(self.player_1.color,abs((self.in_game_frame_count%100)-50)*0.1+0.5)
             else:
                 self.player_1.render(frame)
                 self.player_2.render(frame)
+                self.player_2.current_highlighted_color = Color.adj_color_brightness(self.player_2.color,abs((self.in_game_frame_count%100)-50)*0.1+0.5)
+            
+            x1,y1 = self.player_1.pos
+            w1,h1 = self.player_1.dim
+            x2,y2 = self.player_2.pos
+            w2,h2 = self.player_2.dim
+            z1 = self.player_1.z
+            z2 = self.player_2.z
 
-                self.player_2.current_highlighted_color = Color.adj_color_brightness(self.player_1.highlighted_color,abs((self.in_game_frame_count%100)-50)*0.05)
-
-            self.render_health_bar(frame,self.player_1,left_text="Player 1",color=self.player_1.color)
-            self.render_health_bar(frame,self.player_2,left_text="Player 2",pos=[WIDTH//2,HEIGHT-30],color=self.player_2.color)
-
-            helper.render_image(frame,"./assets/img/ddakji/arrow.png",WIDTH//2+120,16 if self.player_turn==1 else HEIGHT-16)
+            if self.player_turn==1:
+                if not self.player_1.is_grabbing and (self.in_game_frame_count<=self.move_cooldown or self.in_game_frame_count>self.next_move_cooldown):
+                    helper.render_image(frame,"./assets/img/ddakji/arrow_vertical.png",x1+w1//2,y1-z1//2-20-(math.sin(self.in_game_frame_count/10)*5))
+                    if self.num_throws<2:
+                        helper.render_text(frame,f"Click & hold",x1+w1//2,y1-z1//2-60,font_size=16,color=Color.BLACK)
+                        helper.render_text(frame,f"to grab!",x1+w1//2,y1-z1//2-45,font_size=16,color=Color.BLACK)
+            elif self.player_turn==2:
+                if not self.player_2.is_grabbing and (self.in_game_frame_count<=self.move_cooldown or self.in_game_frame_count>self.next_move_cooldown):
+                    helper.render_image(frame,"./assets/img/ddakji/arrow_vertical.png",x2+w2//2,y2-z2//2-20-(math.sin(self.in_game_frame_count/10)*5))
+                    if self.num_throws<2:
+                        helper.render_text(frame,f"Click & hold",x2+w2//2,y2-z2//2-60,font_size=16,color=Color.BLACK)
+                        helper.render_text(frame,f"to grab!",x2+w2//2,y2-z2//2-45,font_size=16,color=Color.BLACK)
+            self.render_health_bar(frame,self.player_1,left_text="P1",color=self.player_1.color)
+            self.render_health_bar(frame,self.player_2,left_text="P2",pos=[WIDTH//2,HEIGHT-30],color=self.player_2.color)
 
             if self.player_1.is_intersect(self.player_2) and 5 < (self.player_1.z if self.player_turn==1 else self.player_2.z) < 10:
                 dx = self.player_1.pos[0]-self.player_2.pos[0]
                 dy = self.player_1.pos[1]-self.player_2.pos[1]
                 
                 self.player_2.z = 1
-                self.player_2.dz = abs(np.random.normal(0.5,0.25))
-                self.player_2.d_angle = np.random.normal(0,0.1)
+                self.player_2.dz = abs(np.random.normal(0.5,0.1))
+                self.player_2.d_angle = np.random.normal(math.hypot(dx,dy)*0.005,0.002)
 
                 self.player_1.z = 1
-                self.player_1.dz = abs(np.random.normal(0.5,0.25))
-                self.player_1.d_angle = np.random.normal(math.hypot(dx,dy)*0.001,0.01)
+                self.player_1.dz = abs(np.random.normal(0.5,0.1))
+                self.player_1.d_angle = np.random.normal(math.hypot(dx,dy)*0.005,0.002)
                 
-                self.player_1.vel = [np.random.normal(dx*0.1,0.25),np.random.normal(dy*0.1,0.25)]
-                self.player_2.vel = [np.random.normal(-dx*0.1,0.25),np.random.normal(-dy*0.1,0.25)]
+                self.player_1.vel = [np.random.normal(dx*0.1,0.2),np.random.normal(dy*0.1,0.2)]
+                self.player_2.vel = [np.random.normal(-dx*0.1,0.2),np.random.normal(-dy*0.1,0.2)]
 
                 helper.play_sound("./assets/sounds/drop.wav")
 
@@ -138,12 +180,12 @@ class DdakjiGame(GameHandler):
                 w2,h2 = self.player_2.dim
                 # toggle win/lose round
                 if self.player_turn==1:
-                    self.player_1.pos = self.player_1.original_pos
+                    self.player_1.pos = [WIDTH//2-w1//2,HEIGHT//2-h1//2]
                     if self.player_2.prev_rotation_state != self.player_2.rotation_state:
                         self.player_2.health -= 1
                         helper.play_sound("./assets/sounds/slap.wav")
                 elif self.player_turn==2:
-                    self.player_2.pos = self.player_2.original_pos
+                    self.player_2.pos = [WIDTH//2-w2//2,HEIGHT//2-h2//2]
                     if self.player_1.prev_rotation_state != self.player_1.rotation_state:
                         self.player_1.health -= 1
                         helper.play_sound("./assets/sounds/slap.wav")
@@ -152,6 +194,8 @@ class DdakjiGame(GameHandler):
                     self.toggle_game_state(2)
                 elif self.player_2.health==0:
                     self.toggle_game_state(1)
+
+                self.num_throws += 1
                 
 
                 self.player_turn = 1 if self.player_turn==2 else 2
@@ -229,16 +273,16 @@ class DdakjiGame(GameHandler):
         )
         helper.render_image(
             frame, "./assets/img/ddakji/demo.png",
-            WIDTH // 2, HEIGHT // 2.1, [int(500 / 2.25), int(375 / 2.25)]
+            WIDTH // 2, HEIGHT // 2, [int(400//1.65), int(300//1.65)]
         )
         helper.render_text(
-            frame, "Click and drag to aim at your opponent!",
-            WIDTH // 2, HEIGHT // 1.29, font_size=20, color=Color.WHITE
+            frame, "Tip: aim it at the edge of the opponent's Ddakji to flip it easier!",
+            WIDTH // 2, HEIGHT // 1.2, font_size=20, color=Color.WHITE
         )
-        helper.render_text(
-            frame, "Ensure that the right angle has been put in place!",
-            WIDTH // 2, HEIGHT // 1.22, font_size=20, color=Color.WHITE
-        )
+        # helper.render_text(
+        #     frame, "Ensure that the right angle has been put in place!",
+        #     WIDTH // 2, HEIGHT // 1.22, font_size=20, color=Color.WHITE
+        # )
 
         self.help_start_btn.render(frame)
         self.help_back_btn.render(frame)

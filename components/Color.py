@@ -28,6 +28,7 @@ class Color:
     HONEYCOMB_DARK_YELLOW = (127,100,0)
     STONE = (93,110,118)
     CARD_SAND = (202,170,128)
+    CRIMSON = (220,20,60)
 
     def get_color(r,g,b):
         return (r,g,b)
@@ -42,4 +43,9 @@ class Color:
         r = min(255, base_color[0] * percentage)
         g = min(255, base_color[1] * percentage)
         b = min(255, base_color[2] * percentage)
+        return (r, g, b)
+    def apply_color_filter(base_color,filter_color,percentage):
+        r = int(base_color[0] * (1 - percentage) + filter_color[0] * percentage)
+        g = int(base_color[1] * (1 - percentage) + filter_color[1] * percentage)
+        b = int(base_color[2] * (1 - percentage) + filter_color[2] * percentage)
         return (r, g, b)

@@ -8,16 +8,14 @@ import random
 helper = Helper()
 
 class Ddakji(Block):
-    def __init__(self, x, y, w, h, color, stroke_thickness=0, stroke_color=Color.BLACK,health=10,max_health=10,highlighted_color=Color.SQUID_PINK):
-        super().__init__(x, y, w, h, color, stroke_thickness, stroke_color)
+    def __init__(self, x, y, w, h, color, stroke_thickness=0, stroke_color=Color.BLACK,health=10,max_health=10,highlighted_color=Color.SQUID_PINK,text_overlay=None):
+        super().__init__(x, y, w, h, color, stroke_thickness, stroke_color, text_overlay)
         self.pos = [x,y]
         self.vel = [0,0]
         self.dim = [w,h]
         self.z = 0 # altitude
         self.dz = 0 # velocity of altitude
         self.gravity = 0.1
-
-        self.original_pos = [random.randint(WIDTH//2-40,WIDTH//2+40),random.randint(HEIGHT//2-40,HEIGHT//2+40)]
 
         self.angle = 0
         self.d_angle = 0
@@ -38,20 +36,22 @@ class Ddakji(Block):
     def render(self,frame):
         w,h = self.dim
         x,y = self.pos
+        z = self.z
 
         # shadow
-        shadow_surface = pg.Surface((w-self.z//4,h-self.z//4),pg.SRCALPHA)
+        shadow_surface = pg.Surface((w-z//4,h-z//4),pg.SRCALPHA)
         shadow_surface.fill((0,0,0,100))
-        frame.blit(shadow_surface,(x+self.z,y+self.z))
+        frame.blit(shadow_surface,(x+z,y+z))
 
-        pg.draw.rect(frame,self.color,(x-self.z//2,y-self.z//2,w+self.z,h+self.z))
+        pg.draw.rect(frame,self.color,(x-z//2,y-z//2,w+z,h+z))
         if self.rotation_state==0:
-            pg.draw.line(frame,Color.BLACK,(x-self.z//2,y-self.z//2),(x+w+self.z//2,y+h+self.z//2),width=self.stroke_thickness)
-            pg.draw.line(frame,Color.BLACK,(x+w+self.z//2,y-self.z//2),(x-self.z//2,y+h+self.z//2),width=self.stroke_thickness)
-        pg.draw.rect(frame,self.current_highlighted_color if self.is_selected else Color.BLACK,(x-self.z//2,y-self.z//2,w+self.z,h+self.z),width=self.stroke_thickness)
+            inset = self.stroke_thickness//2
+            pg.draw.line(frame,Color.apply_color_filter(self.color,Color.BLACK,0.65),(x-z//2+inset,y-z//2+inset),(x+w+z//2-inset,y+h+z//2-inset),width=self.stroke_thickness)
+            pg.draw.line(frame,Color.apply_color_filter(self.color,Color.BLACK,0.65),(x+w+z//2-inset,y-z//2+inset),(x-z//2+inset,y+h+z//2-inset),width=self.stroke_thickness)
+        pg.draw.rect(frame,self.current_highlighted_color if self.is_selected else Color.BLACK,(x-z//2,y-z//2,w+z,h+z),width=3 if self.is_selected else 2)
 
         if not self.is_grabbing:
-            if self.z > 0:
+            if z > 0:
                 self.pos[0] += self.vel[0]
                 self.pos[1] += self.vel[1]
 
@@ -67,6 +67,9 @@ class Ddakji(Block):
         else:
             mouse_x,mouse_y = pg.mouse.get_pos()
             self.grab(mouse_x,mouse_y,grab_height=50)
+        
+        if self.text_overlay:
+            helper.render_text(frame,self.text_overlay,x+w//2,y+h+10+z//2,color=Color.BLACK,align="center",font_size=16)
 
     def grab(self,mouse_x,mouse_y,grab_height=50):
         self.dz = 0
